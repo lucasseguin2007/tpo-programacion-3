@@ -77,7 +77,7 @@ public class SeleccionController {
         return switch (criterio) {
             case "valor" -> Comparator.comparingDouble(Item::getValor);
             case "peso"  -> Comparator.comparingDouble(Item::getPeso);
-            case "ratio" -> Comparator.comparingDouble(Item::ratioValorPeso);
+            case "ratio" -> Comparator.comparingDouble(Item::ratioValorPeso).reversed();
             default -> throw new IllegalArgumentException(
                     "Criterio invalido: " + criterio + ". Use valor, peso o ratio.");
         };
