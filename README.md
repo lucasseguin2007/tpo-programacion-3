@@ -94,3 +94,82 @@ la relajación de aristas está mal.
 - [ ] el README explica **qué dominio eligieron y qué representa el costo**
 
 Ver `GUIA-TPO.md` para el paso a paso.
+
+# Hito 3 - Dominio: Red de Islas Piratas
+
+## Integrantes
+
+- Santiago Testino
+- Santiago Villanti
+- Lucas Seguin
+
+## Descripción
+
+El sistema modela un mundo de piratas compuesto por diferentes islas,
+puertos y fortalezas marítimas conectadas mediante rutas navegables.
+
+El objetivo es representar el mapa mediante un grafo ponderado para
+posteriormente aplicar algoritmos de recorrido, caminos mínimos,
+optimización y selección.
+
+## Nodos
+
+Cada nodo representa una ubicación importante del mapa.
+
+Las ubicaciones iniciales son:
+
+- Puerto Real
+- Isla Tortuga
+- Bahía Negra
+- Isla Calavera
+- Puerto Dorado
+- Isla del Kraken
+- Fortaleza Naval
+- Isla Perdida
+
+## Aristas
+
+Cada arista representa una ruta marítima directa entre dos ubicaciones.
+
+Las rutas son bidireccionales, por lo que pueden recorrerse en ambos sentidos.
+
+## Costo de las aristas
+
+El peso de cada arista representa la cantidad de combustible necesaria
+para recorrer esa ruta marítima.
+
+La unidad utilizada será UC (Unidades de Combustible).
+
+Ejemplo:
+
+Puerto Real -- Isla Tortuga = 4 UC
+
+Esto significa que viajar entre ambas ubicaciones consume 4 unidades
+de combustible.
+
+## Conexiones iniciales
+
+| Origen | Destino | Costo |
+|---|---|---|
+| Puerto Real | Isla Tortuga | 4 UC |
+| Puerto Real | Bahía Negra | 7 UC |
+| Puerto Real | Fortaleza Naval | 9 UC |
+| Isla Tortuga | Bahía Negra | 3 UC |
+| Isla Tortuga | Isla Calavera | 6 UC |
+| Isla Tortuga | Puerto Dorado | 8 UC |
+| Bahía Negra | Isla Calavera | 5 UC |
+| Bahía Negra | Fortaleza Naval | 6 UC |
+| Isla Calavera | Puerto Dorado | 4 UC |
+| Isla Calavera | Isla del Kraken | 7 UC |
+| Puerto Dorado | Isla del Kraken | 3 UC |
+| Puerto Dorado | Isla Perdida | 9 UC |
+| Isla del Kraken | Isla Perdida | 5 UC |
+| Fortaleza Naval | Isla Perdida | 8 UC |
+
+## Selección de cargamentos
+
+El barco tendrá una capacidad máxima de carga.
+
+Los diferentes cargamentos tendrán un peso y un valor asociado,
+permitiendo posteriormente aplicar algoritmos como mochila fraccional
+y mochila 0/1.
