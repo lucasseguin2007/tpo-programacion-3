@@ -48,20 +48,99 @@
 ---
 
 ### GET /api/grafo/dijkstra
+**Descripción:** Calcula la ruta marítima de menor consumo de combustible entre dos ubicaciones de la Red de Islas Piratas.
 
-_(completar)_
+**Endpoint:** GET /api/grafo/dijkstra?origen=PR&destino=IP
+
+**Parámetros:**
+- origen: ID de la ubicación inicial.
+- destino: ID de la ubicación final.
+
+**Salida de ejemplo:**
+{"vertices":["PR","FN","IP"],"costoTotal":17.0}
+
+**Técnica:** Greedy (Dijkstra).
+
+**Estructuras utilizadas:** PriorityQueue, arreglos de distancias, predecesores y visitados.
+
+**Complejidad temporal:** O((V + E) log V).
+
+**Complejidad espacial:** O(V + E), considerando la cola de prioridad con entradas duplicadas.
+
+**Justificación:** Cada vértice se procesa una vez y cada arista se examina durante la relajación. La cola de prioridad permite seleccionar los siguientes estados con costo logarítmico.
+
+**Verificación manual:** PR → FN → IP = 9 + 8 = 17 UC.
 
 ---
 
 ### GET /api/grafo/prim
+**Descripción:** Calcula el árbol de recubrimiento mínimo de la Red de Islas Piratas utilizando el algoritmo de Prim.
 
-_(completar)_
+**Endpoint:** GET /api/grafo/prim?origen=PR
+
+**Parámetro:** origen, identificador de la isla inicial.
+
+**Técnica:** Greedy.
+
+**Estructuras utilizadas:** PriorityQueue, arreglo de
+visitados y lista de aristas del resultado.
+
+**Complejidad temporal:** O(E log V), para un grafo
+simple y conexo utilizando una cola de prioridad.
+
+**Complejidad espacial:** O(V + E).
+
+**Verificación manual:**
+- PR - IT: 4 UC
+- IT - BN: 3 UC
+- BN - IC: 5 UC
+- IC - PD: 4 UC
+- PD - IK: 3 UC
+- IK - IP: 5 UC
+- BN - FN: 6 UC
+
+**Resultado:** 7 aristas, costo total = 30 UC.
+
+El árbol conecta los 8 vértices sin formar ciclos.
 
 ---
 
 ### GET /api/grafo/kruskal
+**Descripción:** Calcula el árbol de recubrimiento mínimo
+de la Red de Islas Piratas mediante Kruskal.
 
-_(completar)_
+**Endpoint:** GET /api/grafo/kruskal
+
+**Parámetros:** No requiere parámetros.
+
+**Técnica:** Greedy.
+
+**Estructuras utilizadas:** Lista de aristas ordenadas,
+arreglos padre[] y tamanio[] para Union-Find.
+
+**Complejidad temporal:** O(E log E) en grafos conexos.
+
+**Complejidad espacial:** O(V + E).
+
+**Justificación:** Se ordenan las E aristas por costo
+creciente. Union-Find utiliza compresión de caminos
+y unión por tamaño para detectar ciclos eficientemente.
+
+**Verificación manual:**
+- IT - BN: 3 UC
+- PD - IK: 3 UC
+- PR - IT: 4 UC
+- IC - PD: 4 UC
+- BN - IC: 5 UC
+- IK - IP: 5 UC
+- BN - FN: 6 UC
+
+**Resultado:**
+7 aristas seleccionadas.
+Costo total mínimo = 30 UC.
+
+**Comparación:** Prim y Kruskal obtienen el mismo
+costo mínimo sobre nuestro grafo: 30 UC.
 
 ---
 

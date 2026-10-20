@@ -5,6 +5,10 @@ import uade.prog3.tpo.service.Grafo;
 
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.PriorityQueue;
 
 /**
  * UNIDAD: Grafos II (clase 5) y PD sobre grafos (clase 8)
@@ -16,7 +20,7 @@ public class CaminosMinimos {
 
     /** Resultado de una consulta de camino minimo. */
     public record Camino(List<String> vertices, double costoTotal) { }
-
+    private record Estado(int nodo, double distancia) {}
     /**
      * Dijkstra: camino de costo minimo desde un origen hasta un destino.
      *
@@ -34,7 +38,83 @@ public class CaminosMinimos {
      * y por que los pesos negativos lo rompen.
      */
     public Camino dijkstra(Grafo grafo, String origenId, String destinoId) {
-        throw new PendienteDeImplementar("Dijkstra");
+        int n = grafo.cantidadVertices();
+        int origen = grafo.indiceDe(origenId);
+        int destino = grafo.indiceDe(destinoId);
+
+        // Validar que no existan costos negativos
+        for (int i = 0; i < n; i++) {
+            for (Grafo.Arista arista : grafo.vecinos(i)) {
+                if (!Double.isFinite(arista.costo()) || arista.costo() < 0) {
+                    throw new IllegalArgumentException(
+                            "Dijkstra requiere costos finitos y no negativos"
+                    );
+                }
+            }
+        }
+
+        double[] distancias = new double[n];
+        int[] anteriores = new int[n];
+        boolean[] visitados = new boolean[n];
+
+        Arrays.fill(distancias, Double.POSITIVE_INFINITY);
+        Arrays.fill(anteriores, -1);
+
+        distancias[origen] = 0;
+
+        PriorityQueue<Estado> cola = new PriorityQueue<>(
+                (a, b) -> Double.compare(a.distancia(), b.distancia())
+        );
+
+        cola.add(new Estado(origen, 0));
+
+        while (!cola.isEmpty()) {
+            Estado estado = cola.poll();
+            int actual = estado.nodo();
+
+            if (visitados[actual]) {
+                continue;
+            }
+
+            visitados[actual] = true;
+
+            // Explorar los vecinos
+            for (Grafo.Arista arista : grafo.vecinos(actual)) {
+                int vecino = arista.destino();
+                double costo = arista.costo();
+
+                double nuevaDistancia = distancias[actual] + costo;
+
+                if (!visitados[vecino] &&
+                        nuevaDistancia < distancias[vecino]) {
+
+                    distancias[vecino] = nuevaDistancia;
+                    anteriores[vecino] = actual;
+
+                    cola.add(new Estado(vecino, nuevaDistancia));
+                }
+            }
+        }
+
+        if (Double.isInfinite(distancias[destino])) {
+            throw new IllegalArgumentException(
+                    "No existe un camino entre los nodos indicados"
+            );
+        }
+
+        // Reconstruir el camino desde el destino
+        List<String> camino = new ArrayList<>();
+
+        int actual = destino;
+
+        while (actual != -1) {
+            camino.add(grafo.idDe(actual));
+            actual = anteriores[actual];
+        }
+
+        Collections.reverse(camino);
+
+        return new Camino(camino, distancias[destino]);
     }
 
     /**

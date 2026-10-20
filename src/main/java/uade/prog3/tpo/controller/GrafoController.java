@@ -69,7 +69,7 @@ public class GrafoController {
     /** GET /api/grafo/dijkstra?origen=A&destino=H */
     @GetMapping("/dijkstra")
     public CaminosMinimos.Camino dijkstra(@RequestParam String origen, @RequestParam String destino) {
-        return caminosMinimos.dijkstra(grafoService.cargar(true), origen, destino);
+        return caminosMinimos.dijkstra(grafoService.cargar(false), origen, destino);
     }
 
     /** GET /api/grafo/floyd */
