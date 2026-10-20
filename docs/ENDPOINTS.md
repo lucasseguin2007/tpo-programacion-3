@@ -257,3 +257,107 @@ Por defecto usa `ratio`.
 **Recurrencia:** T(n) = 2T(n/2) + O(n)
 
 **Estructura usada:** listas auxiliares y mezcla manual.
+
+### GET /api/grafo/floyd
+
+**Endpoint:** GET /api/grafo/floyd
+
+**Descripción:** Calcula los caminos de menor costo entre todos los pares de ubicaciones de la Red de Islas Piratas, utilizando el algoritmo Floyd-Warshall.
+
+**Parámetros:** No requiere parámetros.
+
+**Técnica:** Programación Dinámica.
+
+**Tipo de grafo:** No dirigido y ponderado.
+
+**Estructuras utilizadas:** Matriz de adyacencia, matriz de distancias y Map para almacenar los resultados.
+
+**Complejidad temporal:** O(V³).
+
+**Complejidad espacial:** O(V²).
+
+**Justificación:** Floyd-Warshall utiliza tres bucles anidados que recorren los V vértices. Para cada vértice intermedio k, evalúa si pasar por él permite reducir el costo entre el origen i y el destino j.
+
+Cada evaluación se realiza en tiempo constante. Por lo tanto, la complejidad temporal es O(V³).
+
+La complejidad espacial es O(V²), debido a la matriz de distancias y al mapa de resultados.
+
+**Detección de ciclos negativos:** Al finalizar, el algoritmo comprueba los valores de la diagonal principal. Si alguna posición dist[i][i] es negativa, se detecta un ciclo de costo negativo y se lanza una excepción.
+
+**Salida de ejemplo (extracto):**
+
+{
+"PR->PR": 0.0,
+"PR->IT": 4.0,
+"PR->BN": 7.0,
+"PR->IC": 10.0,
+"PR->PD": 12.0,
+"PR->IK": 15.0,
+"PR->FN": 9.0,
+"PR->IP": 17.0
+}
+
+**Verificación manual:**
+
+PR → IC: PR → IT → IC = 4 + 6 = 10 UC.
+
+PR → PD: PR → IT → PD = 4 + 8 = 12 UC.
+
+PR → IP: PR → FN → IP = 9 + 8 = 17 UC.
+
+BN → IP: BN → FN → IP = 6 + 8 = 14 UC.
+
+PD → IK: conexión directa de 3 UC.
+
+**Resultado:** Se obtienen los costos mínimos entre los 8 vértices, generando 64 pares origen-destino.
+
+**Comparación con Dijkstra:** Pendiente de incorporar las métricas de ejecución de Dijkstra desde cada vértice y las evaluaciones realizadas por Floyd-Warshall.
+
+---
+
+### GET /api/grafo/comparacion
+
+**Endpoint:** GET /api/grafo/comparacion
+
+**Descripción:** Compara Floyd-Warshall con Dijkstra ejecutado una vez desde cada vértice del grafo.
+
+**Parámetros:** No requiere parámetros.
+
+**Técnicas:** Programación Dinámica (Floyd-Warshall) y Greedy (Dijkstra).
+
+**Complejidad temporal:**
+
+**Floyd-Warshall:** O(V³).
+
+**Dijkstra V veces:** O(V(V+E) log V).
+
+**Comparación total:** O(V³ + V(V+E) log V).
+
+**Complejidad espacial:** O(V² + V + E), incluyendo la matriz de Floyd y las estructuras auxiliares utilizadas por Dijkstra.
+
+**Métricas registradas:**
+
+**Evaluaciones Floyd:** cantidad de combinaciones (k,i,j).
+
+**Expansiones Dijkstra:** cantidad de vértices procesados por primera vez, sumada para todos los orígenes.
+
+**Aristas examinadas Dijkstra:** cantidad total de entradas de adyacencia procesadas.
+
+**Mismas distancias:** indica si ambos algoritmos calcularon los mismos costos mínimos.
+
+**Resultados esperados sobre la Red de Islas Piratas:**
+
+Vértices
+8
+Evaluaciones Floyd
+512
+Expansiones Dijkstra
+64
+Aristas examinadas Dijkstra
+224
+Coincidencia de distancias
+true
+**Conclusión:** Ambos algoritmos calculan los mismos costos mínimos para todos los pares de vértices. Floyd-Warshall utiliza una matriz y un procedimiento de programación dinámica, mientras que Dijkstra utiliza una cola de prioridad y una estrategia greedy. Las métricas cuentan operaciones de distinta naturaleza y no representan directamente tiempos de ejecución.
+
+---
+

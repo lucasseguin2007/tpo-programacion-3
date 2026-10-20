@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.PriorityQueue;
+import java.util.LinkedHashMap;
 
 /**
  * UNIDAD: Grafos II (clase 5) y PD sobre grafos (clase 8)
@@ -21,6 +22,13 @@ public class CaminosMinimos {
     /** Resultado de una consulta de camino minimo. */
     public record Camino(List<String> vertices, double costoTotal) { }
     private record Estado(int nodo, double distancia) {}
+    public record Comparacion(
+            int vertices,
+            long evaluacionesFloyd,
+            long expansionesDijkstra,
+            long aristasExaminadasDijkstra,
+            boolean mismasDistancias
+    ) {}
     /**
      * Dijkstra: camino de costo minimo desde un origen hasta un destino.
      *
@@ -130,7 +138,45 @@ public class CaminosMinimos {
      * Devuelve un mapa "origen->destino" con el costo minimo de cada par.
      */
     public Map<String, Double> floydWarshall(Grafo grafo) {
-        throw new PendienteDeImplementar("Floyd-Warshall");
+        int n = grafo.cantidadVertices();
+        // Matriz inicial con costos directos
+        double[][] distancias = grafo.matrizDeAdyacencia();
+        // Programacion dinamica
+        for (int k = 0; k < n; k++) {
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < n; j++) {
+                    // No existe camino pasando por k
+                    if (Double.isInfinite(distancias[i][k]) ||
+                            Double.isInfinite(distancias[k][j])) {
+                        continue;
+                    }
+                    double nuevoCosto =
+                            distancias[i][k] + distancias[k][j];
+                    if (nuevoCosto < distancias[i][j]) {
+                        distancias[i][j] = nuevoCosto;
+                    }
+                }
+            }
+        }
+        // Deteccion de ciclos negativos
+        for (int i = 0; i < n; i++) {
+            if (distancias[i][i] < 0) {
+                throw new IllegalArgumentException(
+                        "El grafo contiene un ciclo de costo negativo");
+            }
+        }
+        // Convertir la matriz a un mapa
+        Map<String, Double> resultado = new LinkedHashMap<>();
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                String clave = grafo.idDe(i) + "->" + grafo.idDe(j);
+                Double costo = Double.isInfinite(distancias[i][j])
+                        ? null
+                        : distancias[i][j];
+                resultado.put(clave, costo);
+            }
+        }
+        return resultado;
     }
 
     /**
@@ -143,5 +189,102 @@ public class CaminosMinimos {
      */
     public Camino ucs(Grafo grafo, String origenId, String destinoId) {
         throw new PendienteDeImplementar("UCS");
+    }
+
+    public Comparacion compararFloydConDijkstra(Grafo grafo) {
+
+        int n = grafo.cantidadVertices();
+
+        // Ejecutamos Floyd-Warshall sobre el mismo grafo.
+        Map<String, Double> floyd = floydWarshall(grafo);
+
+        long evaluacionesFloyd = (long) n * n * n;
+        long expansionesDijkstra = 0;
+        long aristasExaminadas = 0;
+
+        boolean mismasDistancias = true;
+
+        // Ejecutamos Dijkstra desde CADA vertice.
+        for (int origen = 0; origen < n; origen++) {
+
+            double[] distancias = new double[n];
+            boolean[] visitados = new boolean[n];
+
+            Arrays.fill(distancias, Double.POSITIVE_INFINITY);
+            distancias[origen] = 0;
+
+            PriorityQueue<Estado> cola = new PriorityQueue<>(
+                    (a, b) -> Double.compare(
+                            a.distancia(), b.distancia())
+            );
+
+            cola.add(new Estado(origen, 0));
+
+            while (!cola.isEmpty()) {
+
+                Estado estado = cola.poll();
+                int actual = estado.nodo();
+
+                if (visitados[actual]) {
+                    continue;
+                }
+
+                visitados[actual] = true;
+                expansionesDijkstra++;
+
+                for (Grafo.Arista arista : grafo.vecinos(actual)) {
+
+                    aristasExaminadas++;
+
+                    if (!Double.isFinite(arista.costo()) ||
+                            arista.costo() < 0) {
+                        throw new IllegalArgumentException(
+                                "Dijkstra requiere costos finitos y no negativos");
+                    }
+
+                    int vecino = arista.destino();
+
+                    double nuevaDistancia =
+                            distancias[actual] + arista.costo();
+
+                    if (!visitados[vecino] &&
+                            nuevaDistancia < distancias[vecino]) {
+
+                        distancias[vecino] = nuevaDistancia;
+
+                        cola.add(new Estado(
+                                vecino, nuevaDistancia));
+                    }
+                }
+            }
+
+            // Comparar los resultados con Floyd
+            for (int destino = 0; destino < n; destino++) {
+
+                String clave = grafo.idDe(origen)
+                        + "->" + grafo.idDe(destino);
+
+                Double costoFloyd = floyd.get(clave);
+                double costoDijkstra = distancias[destino];
+
+                if (costoFloyd == null) {
+                    if (!Double.isInfinite(costoDijkstra)) {
+                        mismasDistancias = false;
+                    }
+                } else if (Double.isInfinite(costoDijkstra) ||
+                        Math.abs(costoFloyd - costoDijkstra) > 0.000001) {
+
+                    mismasDistancias = false;
+                }
+            }
+        }
+
+        return new Comparacion(
+                n,
+                evaluacionesFloyd,
+                expansionesDijkstra,
+                aristasExaminadas,
+                mismasDistancias
+        );
     }
 }

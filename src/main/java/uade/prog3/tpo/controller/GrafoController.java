@@ -75,8 +75,18 @@ public class GrafoController {
     /** GET /api/grafo/floyd */
     @GetMapping("/floyd")
     public Map<String, Double> floyd() {
-        return caminosMinimos.floydWarshall(grafoService.cargar(true));
+        return caminosMinimos.floydWarshall(grafoService.cargar(false));
     }
+
+
+    /** GET /api/grafo/comparacion */
+    @GetMapping("/comparacion")
+    public CaminosMinimos.Comparacion comparacion() {
+        return caminosMinimos.compararFloydConDijkstra(
+                grafoService.cargar(false)
+        );
+    }
+
 
     /** GET /api/grafo/ucs?origen=A&destino=H */
     @GetMapping("/ucs")
