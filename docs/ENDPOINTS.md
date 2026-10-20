@@ -100,6 +100,22 @@ simple y conexo utilizando una cola de prioridad.
 - BN - FN: 6 UC
 
 **Resultado:** 7 aristas, costo total = 30 UC.
+**Salida de ejemplo:**
+
+```json
+{
+  "aristas": [
+    {"origen": "PR", "destino": "IT", "costo": 4.0},
+    {"origen": "IT", "destino": "BN", "costo": 3.0},
+    {"origen": "BN", "destino": "IC", "costo": 5.0},
+    {"origen": "IC", "destino": "PD", "costo": 4.0},
+    {"origen": "PD", "destino": "IK", "costo": 3.0},
+    {"origen": "IK", "destino": "IP", "costo": 5.0},
+    {"origen": "BN", "destino": "FN", "costo": 6.0}
+  ],
+  "costoTotal": 30.0
+}
+```
 
 El árbol conecta los 8 vértices sin formar ciclos.
 
@@ -142,6 +158,25 @@ Costo total mínimo = 30 UC.
 **Comparación:** Prim y Kruskal obtienen el mismo
 costo mínimo sobre nuestro grafo: 30 UC.
 
+
+**Salida de ejemplo:**
+
+```json
+{
+  "aristas": [
+    {"origen":"IT","destino":"BN","costo":3.0},
+    {"origen":"PD","destino":"IK","costo":3.0},
+    {"origen":"PR","destino":"IT","costo":4.0},
+    {"origen":"IC","destino":"PD","costo":4.0},
+    {"origen":"BN","destino":"IC","costo":5.0},
+    {"origen":"IK","destino":"IP","costo":5.0},
+    {"origen":"BN","destino":"FN","costo":6.0}
+  ],
+  "costoTotal": 30.0
+}
+```
+
+
 ---
 
 ### GET /api/seleccion/greedy
@@ -166,6 +201,33 @@ utilizando un algoritmo greedy con mochila 0/1.
 - Valor total: 90
 
 No alcanza el óptimo de 105, demostrando que greedy no garantiza la solución óptima en mochila 0/1.
+
+
+**Salida de ejemplo:**
+
+```json
+{
+  "elegidos": [
+    {
+      "id": "I4",
+      "nombre": "Item 4",
+      "peso": 3.0,
+      "valor": 50.0,
+      "nodoId": "IC"
+    },
+    {
+      "id": "I2",
+      "nombre": "Item 2",
+      "peso": 4.0,
+      "valor": 40.0,
+      "nodoId": "IT"
+    }
+  ],
+  "valorTotal": 90.0,
+  "pesoTotal": 7.0,
+  "tecnica": "Greedy"
+}
+```
 
 ---
 
@@ -211,6 +273,35 @@ I2	    0	0	0	0	40	40	40	40	40	50	50
 I3	    0	0	0	0	40	40	40	40	40	50	50
 I4	    0	0	0	50	50	50	50	50	90	90	90
 I5	    0	0	0	50	50	50	55	55	90	90	105
+
+
+
+**Salida de ejemplo:**
+
+```json
+{
+  "elegidos": [
+    {
+      "id": "I5",
+      "nombre": "Item 5",
+      "peso": 7.0,
+      "valor": 55.0,
+      "nodoId": "PD"
+    },
+    {
+      "id": "I4",
+      "nombre": "Item 4",
+      "peso": 3.0,
+      "valor": 50.0,
+      "nodoId": "IC"
+    }
+  ],
+  "valorTotal": 105.0,
+  "pesoTotal": 10.0,
+  "tecnica": "Programacion Dinamica"
+}
+```
+
 ---
 
 ### GET /api/grafo/rutas
@@ -279,6 +370,20 @@ por ejemplo si termina siempre en un extremo.
 
 **Estructura usada:** lista + partición manual con pivote.
 
+
+**Salida de ejemplo:**
+
+```json
+[
+  {"id":"I4","nombre":"Item 4","peso":3.0,"valor":50.0,"nodoId":"IC"},
+  {"id":"I2","nombre":"Item 2","peso":4.0,"valor":40.0,"nodoId":"IT"},
+  {"id":"I5","nombre":"Item 5","peso":7.0,"valor":55.0,"nodoId":"PD"},
+  {"id":"I3","nombre":"Item 3","peso":6.0,"valor":30.0,"nodoId":"BN"},
+  {"id":"I1","nombre":"Item 1","peso":5.0,"valor":10.0,"nodoId":"PR"}
+]
+```
+---
+
 ### GET /api/seleccion/mergesort
 
 Ordena los items utilizando MergeSort propio.
@@ -297,6 +402,21 @@ Por defecto usa `ratio`.
 
 **Estructura usada:** listas auxiliares y mezcla manual.
 
+
+**Salida de ejemplo:**
+
+```json
+[
+  {"id":"I4","nombre":"Item 4","peso":3.0,"valor":50.0,"nodoId":"IC"},
+  {"id":"I2","nombre":"Item 2","peso":4.0,"valor":40.0,"nodoId":"IT"},
+  {"id":"I5","nombre":"Item 5","peso":7.0,"valor":55.0,"nodoId":"PD"},
+  {"id":"I3","nombre":"Item 3","peso":6.0,"valor":30.0,"nodoId":"BN"},
+  {"id":"I1","nombre":"Item 1","peso":5.0,"valor":10.0,"nodoId":"PR"}
+]
+```
+
+
+---
 ### GET /api/grafo/floyd
 
 **Endpoint:** GET /api/grafo/floyd
@@ -397,6 +517,18 @@ Aristas examinadas Dijkstra
 Coincidencia de distancias
 true
 **Conclusión:** Ambos algoritmos calculan los mismos costos mínimos para todos los pares de vértices. Floyd-Warshall utiliza una matriz y un procedimiento de programación dinámica, mientras que Dijkstra utiliza una cola de prioridad y una estrategia greedy. Las métricas cuentan operaciones de distinta naturaleza y no representan directamente tiempos de ejecución.
+
+**Salida de ejemplo:**
+
+```json
+{
+  "vertices": 8,
+  "evaluacionesFloyd": 512,
+  "expansionesDijkstra": 64,
+  "aristasExaminadasDijkstra": 224,
+  "mismasDistancias": true
+}
+```
 
 ---
 
