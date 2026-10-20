@@ -215,7 +215,46 @@ I5	    0	0	0	50	50	50	55	55	90	90	105
 
 ### GET /api/grafo/rutas
 
-_(completar — incluir cantidad de nodos explorados con y sin poda)_
+**Endpoint:** GET /api/grafo/rutas?origen=PR&destino=IP&costoMaximo=20&saltosMaximos=3
+**Descripción:** Encuentra todas las rutas marítimas simples entre dos ubicaciones de la Red de Islas Piratas, respetando un costo máximo de combustible y una cantidad máxima de saltos.
+**Parámetros:**
+**origen:** identificador de la ubicación inicial.
+**destino:** identificador de la ubicación final.
+**costoMaximo:** máximo combustible permitido, expresado en UC.
+**saltosMaximos:** cantidad máxima de aristas que se pueden recorrer.
+**Técnica:** Backtracking recursivo con poda.
+**Estructuras utilizadas:** Lista de adyacencia, arreglo booleano de visitados, lista del camino actual y lista de rutas válidas.
+**Funcionamiento:** El algoritmo explora recursivamente los vecinos de cada isla sin repetir vértices. Cuando el costo acumulado supera el máximo permitido o la cantidad de saltos excede el límite, aplica poda y descarta esa rama. Al retroceder, elimina el último vértice del camino y lo desmarca como visitado.
+**Salida de ejemplo:**
+{
+"rutas": [
+{
+"vertices": ["PR", "FN", "IP"],
+"costoTotal": 17.0
+}
+],
+"exploradosConPoda": 56,
+"exploradosSinPoda": 114,
+"estadosEvitados": 58
+}
+**Complejidad temporal:** O(V!) en el peor caso, considerando la enumeración de todos los caminos simples de un grafo completo. La poda reduce las exploraciones en la práctica, pero no modifica la complejidad exponencial/factorial del peor caso.
+**Complejidad espacial:** O(V) para los visitados, el camino actual y la pila de recursión, sin contar las rutas almacenadas. Al guardar todas las soluciones, el espacio total puede llegar a O(V · V!).
+**Justificación:** El algoritmo puede explorar una cantidad factorial de caminos simples porque, en cada nivel de recursión, dispone de distintos vértices aún no visitados. La poda evita continuar por ramas que ya incumplen las restricciones.
+**Verificación manual:**
+Ruta PR → FN → IP.
+**Costo total:** 9 + 8 = 17 UC.
+**Saltos:** 2.
+Cumple con un costo máximo de 20 UC y un máximo de 3 saltos.
+Comparación con y sin poda:
+Estados explorados con poda
+56
+Estados explorados sin poda
+114
+Estados evitados
+58
+Reducción de exploraciones
+50,9 %
+**Conclusión:** Ambas ejecuciones permiten obtener las mismas rutas válidas. Sin embargo, la poda descarta anticipadamente recorridos que superan las restricciones, reduciendo la cantidad de estados explorados.
 
 ---
 

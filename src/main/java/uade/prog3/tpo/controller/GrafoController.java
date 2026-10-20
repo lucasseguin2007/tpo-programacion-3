@@ -108,11 +108,11 @@ public class GrafoController {
 
     /** GET /api/grafo/rutas?origen=A&destino=H&costoMaximo=30&saltosMaximos=5 */
     @GetMapping("/rutas")
-    public List<Backtracking.Ruta> rutas(@RequestParam String origen,
+    public Backtracking.ResultadoRutas rutas(@RequestParam String origen,
                                          @RequestParam String destino,
                                          @RequestParam(defaultValue = "1000") double costoMaximo,
                                          @RequestParam(defaultValue = "10") int saltosMaximos) {
-        return backtracking.rutasSimples(grafoService.cargar(true), origen, destino,
+        return backtracking.rutasSimples(grafoService.cargar(false), origen, destino,
                 costoMaximo, saltosMaximos);
     }
 }
