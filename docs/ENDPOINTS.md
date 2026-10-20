@@ -145,15 +145,72 @@ costo mínimo sobre nuestro grafo: 30 UC.
 ---
 
 ### GET /api/seleccion/greedy
+**Endpoint:** GET /api/seleccion/greedy?capacidad=10
 
-_(completar — incluir un caso donde greedy NO dé el óptimo)_
+**Descripción:** Selecciona cargamentos para el barco
+utilizando un algoritmo greedy con mochila 0/1.
+
+**Criterio:** Ratio valor/peso descendente.
+
+**Técnica:** Greedy.
+
+**Estructuras:** Listas y MergeSort propio.
+
+**Complejidad temporal:** O(n log n).
+
+**Complejidad espacial:** O(n).
+
+**Verificación:** Con capacidad 10, selecciona I4 e I2.
+
+- Peso total: 7
+- Valor total: 90
+
+No alcanza el óptimo de 105, demostrando que greedy no garantiza la solución óptima en mochila 0/1.
 
 ---
 
 ### GET /api/seleccion/dinamica
+**Endpoint:** GET /api/seleccion/dinamica?capacidad=10
 
-_(completar — incluir la tabla dp del ejemplo)_
+**Descripción:** Resuelve el problema de selección de
+cargamentos mediante mochila 0/1 con programación dinámica.
 
+**Técnica:** Programación Dinámica bottom-up.
+
+**Estructuras:** Matriz dp[n+1][W+1] y lista
+de items seleccionados.
+
+**Complejidad temporal:** O(n * W).
+
+**Complejidad espacial:** O(n * W).
+
+**Justificación:** Se calculan n * W subproblemas.
+Cada celda se resuelve en tiempo constante, consultando
+los valores ya calculados de la fila anterior.
+
+**Recuperación:** Se recorre la tabla desde dp[n][W]
+hasta la primera fila, identificando los items elegidos.
+
+**Verificación:** Con capacidad 10, selecciona I4 e I5.
+
+- Peso total: 10
+- Valor total: 105
+
+**Comparación:** Programación Dinámica supera a Greedy
+por 15 unidades de valor.
+
+La complejidad O(n * W) es pseudopolinómica porque depende
+del valor numérico de W y no de su cantidad de bits.
+
+
+**Tabla Dp:**
+Item	0	1	2	3	4	5	6	7	8	9	10
+Ninguno	0	0	0	0	0	0	0	0	0	0	0
+I1	    0	0	0	0	0	10	10	10	10	10	10
+I2	    0	0	0	0	40	40	40	40	40	50	50
+I3	    0	0	0	0	40	40	40	40	40	50	50
+I4	    0	0	0	50	50	50	50	50	90	90	90
+I5	    0	0	0	50	50	50	55	55	90	90	105
 ---
 
 ### GET /api/grafo/rutas
