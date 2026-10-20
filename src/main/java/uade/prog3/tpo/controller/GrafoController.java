@@ -57,13 +57,13 @@ public class GrafoController {
     /** GET /api/grafo/dfs?origen=A */
     @GetMapping("/dfs")
     public List<String> dfs(@RequestParam String origen) {
-        return recorridos.dfs(grafoService.cargar(true), origen);
+        return recorridos.dfs(grafoService.cargar(false), origen);
     }
 
     /** GET /api/grafo/bfs?origen=A */
     @GetMapping("/bfs")
     public List<String> bfs(@RequestParam String origen) {
-        return recorridos.bfs(grafoService.cargar(true), origen);
+        return recorridos.bfs(grafoService.cargar(false), origen);
     }
 
     /** GET /api/grafo/dijkstra?origen=A&destino=H */

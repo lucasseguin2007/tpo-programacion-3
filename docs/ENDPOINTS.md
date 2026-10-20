@@ -7,27 +7,43 @@
 
 ### GET /api/grafo/dfs
 
-Recorrido en profundidad desde un nodo.
+**Endpoint:** GET /api/grafo/dfs?origen=PR
 
-**Parámetros:** `origen` (id del nodo de partida)
+**Descripción:** Recorre la red de islas piratas en profundidad desde una ubicación inicial.
 
-**Ejemplo:** `GET /api/grafo/dfs?origen=A`
+**Entrada:** ID del nodo origen.
 
-**Respuesta:**
-```json
-["A", "B", "C", "D", "E", "F", "H", "G"]
-```
+**Salida de ejemplo:**
+["PR","IT","IC","BN","FN","IP","PD","IK"]
 
-**Complejidad:** O(V + E) — cada vértice se visita una vez y cada arista se
-recorre una vez, con lista de adyacencia.
+**Técnica:** DFS recursivo, utilizando la pila de llamadas.
 
-**Estructura usada:** recursión (pila de llamadas) + arreglo de visitados.
+**Complejidad temporal:** O(V + E).
+
+**Complejidad espacial:** O(V).
+
+**Justificación:** Cada vértice se visita una vez y se examinan sus aristas mediante una lista de adyacencia.
 
 ---
 
 ### GET /api/grafo/bfs
 
-_(completar)_
+**Endpoint:** GET /api/grafo/bfs?origen=PR
+
+**Descripción:** Recorre la red de islas piratas por niveles desde una ubicación inicial.
+
+**Entrada:** ID del nodo origen.
+
+**Salida de ejemplo:**
+["PR","IT","BN","FN","IC","PD","IP","IK"]
+
+**Técnica:** BFS iterativo, utilizando una cola FIFO.
+
+**Complejidad temporal:** O(V + E).
+
+**Complejidad espacial:** O(V).
+
+**Justificación:** Cada vértice se encola una sola vez y se examinan sus aristas mediante una lista de adyacencia.
 
 ---
 

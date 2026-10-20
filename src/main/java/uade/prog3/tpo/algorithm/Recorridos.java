@@ -3,7 +3,7 @@ package uade.prog3.tpo.algorithm;
 import org.springframework.stereotype.Component;
 import uade.prog3.tpo.service.Grafo;
 
-import java.util.List;
+import java.util.*;
 
 /**
  * UNIDAD: Grafos I (clase 4)          PUNTAJE: 2 puntos
@@ -30,8 +30,31 @@ public class Recorridos {
      * @return lista de ids en orden de visita
      */
     public List<String> dfs(Grafo grafo, String origenId) {
-        throw new PendienteDeImplementar("DFS");
+        List<String> recorrido = new ArrayList<>();
+        Set<Integer> visitados = new HashSet<>();
+
+        int origen = grafo.indiceDe(origenId);
+
+        dfsRecursivo(grafo, origen, visitados, recorrido);
+
+        return recorrido;
     }
+
+    private void dfsRecursivo(Grafo grafo, int actual,
+                              Set<Integer> visitados,
+                              List<String> recorrido) {
+
+        visitados.add(actual);
+        recorrido.add(grafo.idDe(actual));
+
+        for (Grafo.Arista arista : grafo.vecinos(actual)) {
+            int vecino = arista.destino();
+
+            if (!visitados.contains(vecino)) {
+                dfsRecursivo(grafo, vecino, visitados, recorrido);
+            }
+        }
+        }
 
     /**
      * Recorrido en anchura desde un vertice.
@@ -47,6 +70,29 @@ public class Recorridos {
      * en cantidad de aristas pero NO en costo cuando el grafo es ponderado.
      */
     public List<String> bfs(Grafo grafo, String origenId) {
-        throw new PendienteDeImplementar("BFS");
+        List<String> recorrido = new ArrayList<>();
+        Set<Integer> visitados = new HashSet<>();
+        Queue<Integer> cola = new ArrayDeque<>();
+
+        int origen = grafo.indiceDe(origenId);
+
+        cola.add(origen);
+        visitados.add(origen);
+
+        while (!cola.isEmpty()) {
+            int actual = cola.poll();
+            recorrido.add(grafo.idDe(actual));
+
+            for (Grafo.Arista arista : grafo.vecinos(actual)) {
+                int vecino = arista.destino();
+
+                if (!visitados.contains(vecino)) {
+                    visitados.add(vecino);
+                    cola.add(vecino);
+                }
+            }
+        }
+
+        return recorrido;
     }
 }

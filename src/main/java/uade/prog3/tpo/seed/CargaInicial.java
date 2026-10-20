@@ -49,31 +49,33 @@ public class CargaInicial implements CommandLineRunner {
             return;
         }
 
-        Nodo a = new Nodo("A", "Nodo A", "CENTRO", 0);
-        Nodo b = new Nodo("B", "Nodo B", "PUNTO", 12);
-        Nodo c = new Nodo("C", "Nodo C", "PUNTO", 8);
-        Nodo d = new Nodo("D", "Nodo D", "PUNTO", 15);
-        Nodo e = new Nodo("E", "Nodo E", "PUNTO", 6);
-        Nodo f = new Nodo("F", "Nodo F", "PUNTO", 20);
-        Nodo g = new Nodo("G", "Nodo G", "PUNTO", 9);
-        Nodo h = new Nodo("H", "Nodo H", "PUNTO", 4);
+        Nodo pr = new Nodo("PR", "Puerto Real", "PUERTO", 0);
+        Nodo it = new Nodo("IT", "Isla Tortuga", "ISLA", 0);
+        Nodo bn = new Nodo("BN", "Bahía Negra", "BAHIA", 0);
+        Nodo ic = new Nodo("IC", "Isla Calavera", "ISLA", 0);
+        Nodo pd = new Nodo("PD", "Puerto Dorado", "PUERTO", 0);
+        Nodo ik = new Nodo("IK", "Isla del Kraken", "ISLA", 0);
+        Nodo fn = new Nodo("FN", "Fortaleza Naval", "FORTALEZA", 0);
+        Nodo ip = new Nodo("IP", "Isla Perdida", "ISLA", 0);
 
         // El camino directo A->C cuesta 9, pero A->B->C cuesta 4+3=7.
         // Sirve para verificar que la relajacion de aristas este bien hecha.
-        a.conectar(b, 4);
-        a.conectar(c, 9);
-        b.conectar(c, 3);
-        b.conectar(d, 7);
-        c.conectar(d, 2);
-        c.conectar(e, 11);
-        d.conectar(e, 5);
-        d.conectar(f, 8);
-        e.conectar(f, 6);
-        e.conectar(g, 10);
-        f.conectar(h, 3);
-        g.conectar(h, 4);
+        pr.conectar(it, 4);
+        pr.conectar(bn, 7);
+        pr.conectar(fn, 9);
+        it.conectar(bn, 3);
+        it.conectar(ic, 6);
+        it.conectar(pd, 8);
+        bn.conectar(ic, 5);
+        bn.conectar(fn, 6);
+        ic.conectar(pd, 4);
+        ic.conectar(ik, 7);
+        pd.conectar(ik, 3);
+        pd.conectar(ip, 9);
+        ik.conectar(ip, 5);
+        fn.conectar(ip, 8);
 
-        nodoRepository.saveAll(List.of(a, b, c, d, e, f, g, h));
+        nodoRepository.saveAll(List.of(pr, it, bn, ic, pd, ik, fn, ip));
 
         // Items para los problemas de seleccion bajo restriccion.
         //
@@ -82,14 +84,14 @@ public class CargaInicial implements CommandLineRunner {
         // con 105. Es el contraejemplo que se necesita para comparar greedy
         // contra programacion dinamica.
         itemRepository.saveAll(List.of(
-                new Item("I1", "Item 1", 5, 10, "A"),
-                new Item("I2", "Item 2", 4, 40, "B"),
-                new Item("I3", "Item 3", 6, 30, "C"),
-                new Item("I4", "Item 4", 3, 50, "D"),
-                new Item("I5", "Item 5", 7, 55, "E")
+                new Item("I1", "Item 1", 5, 10, "PR"),
+                new Item("I2", "Item 2", 4, 40, "IT"),
+                new Item("I3", "Item 3", 6, 30, "BN"),
+                new Item("I4", "Item 4", 3, 50, "IC"),
+                new Item("I5", "Item 5", 7, 55, "PD")
         ));
 
-        log.info("Carga inicial completada: 8 nodos, 12 aristas, 5 items.");
+        log.info("Carga inicial completada: 8 ubicaciones, 12 rutas, 5 items.");
         log.info("Para desactivarla: app.seed.enabled=false");
     }
 }
