@@ -2,11 +2,19 @@ import Phaser from 'phaser';
 import type { World } from '../api/client';
 import type { SailHandlers, Sailor } from '../state/navigation';
 import { BERTH_HEADING, clamp, dock, edgeKey, HEIGHT, LABEL_ANCHOR, placeBadges, position, shortName, uiScale, WIDTH, type UiScale } from './world/layout';
+import { stepHeading, turnDelayMs } from './world/steering';
 
 const GOLD = 0xe8c27a;
 const TURN_RATE = 2.4; // rad/s: una vuelta de proa completa tarda ~1,3 s
 const WAKE_LIFE = 1800; // ms que tarda en borrarse la estela
 const WAKE_STEP = 38; // ms entre puntos de estela
+const SHADOW_OFFSET: [number, number] = [4, 8]; // la luz viene de arriba a la izquierda: la sombra cae siempre hacia abajo a la derecha
+/** Dónde clavar la bandera de una isla visitada y dónde probar el cartel de rol (en coordenadas de la isla). */
+const FLAG_SPOT: [number, number] = [-50, -10];
+const TAG_SPOTS: Array<[number, number]> = [[0, -100], [0, -82], [0, -66], [-74, -72], [74, -72], [0, -118], [-86, -34], [86, -48]];
+
+interface Box { left: number; right: number; top: number; bottom: number }
+const overlap = (a: Box, b: Box) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
 
 type Role = 'origin' | 'stop' | 'destination';
 const ROLE_STYLE: Record<Role, { stroke: number; width: number; fill: number; fillAlpha: number; text: string; color: string; bg: string }> = {
@@ -25,6 +33,11 @@ interface WakePoint { x: number; y: number; born: number; heading: number }
 export class ArchipelagoScene extends Phaser.Scene implements Sailor {
   private ship!: Phaser.GameObjects.Container;
   private hull!: Phaser.GameObjects.Container;
+  private shadow!: Phaser.GameObjects.Ellipse;
+  private flags = new Map<string, Phaser.GameObjects.Container>();
+  private visited = new Set<string>();
+  private visitedSeen = false;
+  private lastTick = 0;
   private wake!: Phaser.GameObjects.Graphics;
   private routeInk!: Phaser.GameObjects.Graphics;
   private selection!: Phaser.GameObjects.Ellipse;
@@ -85,8 +98,8 @@ export class ArchipelagoScene extends Phaser.Scene implements Sailor {
     const [tx, ty] = dock(to);
     const sx = this.ship.x, sy = this.ship.y;
     this.targetHeading = Math.atan2(ty - sy, tx - sx);
-    const turn = Math.abs(Phaser.Math.Angle.Wrap(this.targetHeading - this.heading));
-    const delay = clamp(turn / TURN_RATE * 1000 * 0.6, 0, 650);
+    // Sale ya mirando hacia donde va: espera lo que tarda la proa en alinearse (antes salía a medio girar).
+    const delay = turnDelayMs(this.heading, this.targetHeading, TURN_RATE);
     const duration = clamp(Phaser.Math.Distance.Between(sx, sy, tx, ty) * 8, 2400, 6200);
     const progress = { t: 0 };
     this.moveTween = this.tweens.add({
@@ -123,6 +136,16 @@ export class ArchipelagoScene extends Phaser.Scene implements Sailor {
   setSelected(id: string | null) {
     this.selected = id;
     this.refreshStyles();
+  }
+
+  /** Clava una bandera en cada isla visitada; la que se suma en esta llegada cae con un pequeño rebote. */
+  setVisited(ids: string[]) {
+    const next = new Set(ids.filter(id => this.islands.has(id)));
+    const animate = this.visitedSeen;
+    this.visitedSeen = true;
+    for (const id of next) if (!this.visited.has(id)) this.plantFlag(id, animate);
+    for (const [id, flag] of this.flags) if (!next.has(id)) { flag.destroy(); this.flags.delete(id); }
+    this.visited = next;
   }
 
   // ---- construcción ----------------------------------------------------------------------
@@ -163,6 +186,28 @@ export class ArchipelagoScene extends Phaser.Scene implements Sailor {
     }
   }
 
+  private plantFlag(id: string, animate: boolean) {
+    const view = this.islands.get(id);
+    if (!view || this.flags.has(id)) return;
+    const g = this.add.graphics();
+    g.fillStyle(0x0a2a32, .45).fillEllipse(0, 1, 13, 4); // sombra en la arena
+    g.fillStyle(0x2e2018).fillRect(-1, -32, 3, 33); // mástil
+    g.fillStyle(0x2b1c0a).fillTriangle(2, -33, 21, -26, 2, -17); // borde
+    g.fillStyle(0xf2c879).fillTriangle(3, -30.5, 16.5, -26, 3, -20.5); // gallardete dorado
+    const flag = this.add.container(0, 0, [g]).setDepth(7);
+    this.flags.set(id, flag);
+    this.layoutFlag(view, flag);
+    if (animate && !this.calm) {
+      const y = flag.y;
+      this.tweens.add({ targets: flag, y: { from: y - 22, to: y }, alpha: { from: 0, to: 1 }, duration: 560, ease: 'Bounce.easeOut' });
+    }
+  }
+
+  private layoutFlag(view: IslandView, flag: Phaser.GameObjects.Container) {
+    const k = this.ui.islandScale;
+    flag.setScale(k * 1.3).setPosition(view.x + FLAG_SPOT[0] * k, view.y + FLAG_SPOT[1] * k);
+  }
+
   private addIsland(id: string, name: string, seed: number) {
     const [x, y] = position(id);
     const [dx, dy] = dock(id);
@@ -181,11 +226,12 @@ export class ArchipelagoScene extends Phaser.Scene implements Sailor {
   private buildShip() {
     const [x, y] = dock(this.world.ubicaciones.some(i => i.id === 'PR') ? 'PR' : this.world.ubicaciones[0].id);
     this.ship = this.add.container(x, y).setDepth(20);
-    const shadow = this.add.ellipse(5, 9, 34, 80, 0x061f29, .38);
+    const shadow = this.shadow = this.add.ellipse(SHADOW_OFFSET[0], SHADOW_OFFSET[1], 34, 80, 0x061f29, .38);
     this.hull = this.add.container(0, 0);
     this.hull.add(this.drawBalandra());
     this.ship.add([shadow, this.hull]);
     this.ship.setRotation(this.heading + Math.PI / 2);
+    this.keepShadowDown();
     // Cabeceo suave y balanceo: el barco nunca está del todo quieto.
     if (this.calm) return;
     this.tweens.add({ targets: this.hull, y: 1.8, duration: 1300, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
@@ -211,8 +257,14 @@ export class ArchipelagoScene extends Phaser.Scene implements Sailor {
     rect(0x4a3222, -1, -6, 2, 30); // botavara
     // mástil y gallardete rojo
     g.fillStyle(0x2e2018).fillCircle(0, -6, 3.2);
-    poly(0xc4452f, [[0, -6], [-12, -2], [-2, 1]]);
+    poly(0xc4452f, [[0, -7], [-4, -5], [-6, 15]]); // gallardete flameando hacia popa: marca de dónde está la proa
     return g;
+  }
+
+  /** La sombra vive dentro del barco que gira; se la contra-rota para que caiga siempre hacia el mismo lado. */
+  private keepShadowDown() {
+    const r = this.ship.rotation, [ox, oy] = SHADOW_OFFSET;
+    this.shadow.setPosition(ox * Math.cos(r) + oy * Math.sin(r), -ox * Math.sin(r) + oy * Math.cos(r));
   }
 
   private drawIsland(g: Phaser.GameObjects.Graphics, id: string, seed: number) {
@@ -302,6 +354,30 @@ export class ArchipelagoScene extends Phaser.Scene implements Sailor {
     const target = this.selected ? this.islands.get(this.selected) : null;
     this.selection.setVisible(!!target);
     if (target) this.selection.setPosition(target.x, target.y - 18);
+    this.placeTags();
+  }
+
+  /**
+   * Cada cartel de rol busca, entre varios lugares alrededor de su isla, el que menos tape nombres,
+   * costos y otros carteles (en pantallas chicas el de arriba pisaba el nombre de la isla vecina).
+   */
+  private placeTags() {
+    const k = this.ui.islandScale;
+    const avoid: Box[] = [...this.islands.values()].map(v => v.label.getBounds());
+    for (const badge of this.badges.values()) if (badge.visible) avoid.push(badge.getBounds());
+    for (const view of this.islands.values()) {
+      if (!view.tag.visible) continue;
+      let best = TAG_SPOTS[0], bestScore = Infinity;
+      for (const spot of TAG_SPOTS) {
+        view.tag.setPosition(view.x + spot[0] * k, view.y + spot[1] * k);
+        const box = view.tag.getBounds();
+        const score = avoid.reduce((sum, other) => sum + overlap(box, other), 0);
+        if (score < bestScore) { best = spot; bestScore = score; }
+        if (score === 0) break;
+      }
+      view.tag.setPosition(view.x + best[0] * k, view.y + best[1] * k);
+      avoid.push(view.tag.getBounds());
+    }
   }
 
   /** Reajusta textos, islas y zonas táctiles al tamaño real del lienzo en pantalla. */
@@ -316,8 +392,10 @@ export class ArchipelagoScene extends Phaser.Scene implements Sailor {
       view.label.setText(u.compact ? shortName(view.name).toUpperCase() : view.name.toUpperCase())
         .setFontSize(u.labelFont).setPadding(7 * pad, 5 * pad, 7 * pad, 5 * pad)
         .setPosition(view.x, view.y + LABEL_ANCHOR[1] - 16 + u.labelFont);
-      view.tag.setFontSize(u.tagFont).setPadding(6, 3, 6, 3).setPosition(view.x, view.y - 100 * u.islandScale);
+      view.tag.setFontSize(u.tagFont).setPadding(6, 3, 6, 3);
       view.hit.setSize(u.hitWidth, u.hitHeight);
+      const flag = this.flags.get(view.id);
+      if (flag) this.layoutFlag(view, flag);
     }
     this.selection.setScale(u.islandScale);
     for (const badge of this.badges.values()) badge.setFontSize(u.badgeFont).setPadding(5, 2, 5, 2);
@@ -342,12 +420,17 @@ export class ArchipelagoScene extends Phaser.Scene implements Sailor {
     if (berth) this.tweens.add({ targets: berth, scale: { from: 1.35, to: 1 }, duration: 520, ease: 'Back.easeOut' });
   }
 
-  update(time: number, delta: number) {
+  update(time: number) {
     this.waves.forEach((wave, i) => { wave.setAlpha(.09 + (Math.sin(time / 1600 + i) + 1) * .07); });
     if (!this.ship) return;
     // Giro gradual: la proa persigue el rumbo a velocidad angular limitada.
-    this.heading = Phaser.Math.Angle.RotateTo(Phaser.Math.Angle.Wrap(this.heading), Phaser.Math.Angle.Wrap(this.targetHeading), TURN_RATE * delta / 1000);
+    // Con reloj real (no con el delta suavizado del motor): giro y avance llevan el mismo tiempo aunque caigan los cuadros.
+    const now = performance.now();
+    const dt = this.lastTick ? Math.min(0.5, (now - this.lastTick) / 1000) : 0;
+    this.lastTick = now;
+    this.heading = stepHeading(this.heading, this.targetHeading, TURN_RATE, dt);
     this.ship.setRotation(this.heading + Math.PI / 2);
+    this.keepShadowDown();
     this.drawWake(time);
     if (++this.frame % 20 === 0) this.relayout(); // sigue el tamaño del lienzo aunque no haya evento de resize
   }

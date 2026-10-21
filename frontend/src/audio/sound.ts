@@ -1,8 +1,10 @@
 import { browserStore, type KeyValueStore } from '../state/save';
 
 export const MUTE_KEY = 'cartas-del-archipielago:silencio:v1';
-const MASTER_VOLUME = 0.32;
-const SEA_VOLUME = 0.05;
+// Niveles medidos en un navegador real: con 0.32 de volumen maestro y campanas a 0.12 el pico que llegaba
+// a los parlantes era ~0.02 (-33 dBFS), prácticamente inaudible. Un limitador evita saturar con estos valores.
+const MASTER_VOLUME = 0.9;
+const SEA_VOLUME = 0.2;
 
 type ContextFactory = () => AudioContext;
 
@@ -32,32 +34,47 @@ export class SoundEngine {
   }
 
   isMuted(): boolean { return this.muted; }
+
+  /**
+   * Prepara el audio dentro de un gesto del jugador (clic o toque). Los navegadores solo dejan
+   * arrancar el audio así; sin esto, las campanadas de una escala o llegada (que no nacen de un clic)
+   * podían quedar mudas.
+   */
+  unlock(): void { this.safely(() => {}); }
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
 
   setMuted(value: boolean): void {
     this.muted = value;
     try { if (value) this.store?.setItem(MUTE_KEY, '1'); else this.store?.removeItem(MUTE_KEY); } catch { /* sin persistencia */ }
-    if (value) this.stopSea(0.1);
+    if (value) this.stopSea(0.1); else this.confirm();
     this.listeners.forEach(listener => listener());
+  }
+
+  /** Campanita breve al activar el sonido: le dice al jugador que ahora sí se oye. */
+  confirm(): void {
+    this.safely(ctx => {
+      this.bell(ctx, 0, 659.25, 0.4, 0.9);
+      this.bell(ctx, 0.14, 880, 0.32, 1.1);
+    });
   }
 
   /** Zarpe: campana grave y mar de fondo hasta la llegada. */
   depart(): void {
     this.safely(ctx => {
-      this.bell(ctx, 0, 392, 0.12, 1.6);
-      this.bell(ctx, 0.16, 523.25, 0.09, 1.4);
+      this.bell(ctx, 0, 392, 0.5, 1.6);
+      this.bell(ctx, 0.18, 523.25, 0.42, 1.4);
       this.startSea(ctx);
     });
   }
 
   /** Escala intermedia: una campanada suave; el mar sigue. */
-  stopover(): void { this.safely(ctx => this.bell(ctx, 0, 659.25, 0.1, 1.2)); }
+  stopover(): void { this.safely(ctx => this.bell(ctx, 0, 659.25, 0.4, 1.2)); }
 
   /** Llegada final: dos campanadas y el mar se apaga. */
   dock(): void {
     this.safely(ctx => {
-      this.bell(ctx, 0, 659.25, 0.13, 1.8);
-      this.bell(ctx, 0.32, 880, 0.11, 2.2);
+      this.bell(ctx, 0, 659.25, 0.5, 1.8);
+      this.bell(ctx, 0.32, 880, 0.42, 2.2);
     });
     this.stopSea(1.2);
   }
@@ -78,27 +95,37 @@ export class SoundEngine {
         this.ctx = this.factory();
         this.master = this.ctx.createGain();
         this.master.gain.value = MASTER_VOLUME;
-        this.master.connect(this.ctx.destination);
+        const limiter = this.ctx.createDynamicsCompressor();
+        limiter.threshold.value = -8; limiter.knee.value = 6; limiter.ratio.value = 12;
+        limiter.attack.value = 0.003; limiter.release.value = 0.25;
+        this.master.connect(limiter).connect(this.ctx.destination);
       } catch {
         this.ctx = null; this.master = null;
         return null;
       }
     }
-    if (this.ctx.state === 'suspended') void this.ctx.resume().catch(() => {});
     return this.ctx;
   }
 
+  /**
+   * Reproduce cuando el contexto está andando. Si el navegador lo dejó suspendido (política de autoplay,
+   * pestaña en segundo plano) se lo reanuda primero: programar notas sobre un reloj detenido las perdía.
+   */
   private safely(play: (ctx: AudioContext, master: GainNode) => void): void {
     try {
       const ctx = this.context();
-      if (ctx && this.master) play(ctx, this.master);
+      if (!ctx || !this.master) return;
+      if (ctx.state === 'running') { play(ctx, this.master); return; }
+      void ctx.resume().then(() => {
+        try { if (!this.muted && ctx.state === 'running' && this.master) play(ctx, this.master); } catch { /* sin sonido */ }
+      }).catch(() => {});
     } catch { /* el sonido nunca debe romper la partida */ }
   }
 
   /** Campana: un tono con su armónico, ataque corto y caída larga. */
   private bell(ctx: AudioContext, delay: number, frequency: number, volume: number, decay: number): void {
     const start = ctx.currentTime + delay;
-    for (const [ratio, level] of [[1, 1], [2.76, 0.35]] as const) {
+    for (const [ratio, level] of [[1, 1], [2.76, 0.45], [5.4, 0.16]] as const) {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';

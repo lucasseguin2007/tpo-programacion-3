@@ -43,6 +43,16 @@ export default function App() {
   useEffect(() => { controller?.attachSailor(scene); return () => controller?.attachSailor(null); }, [controller, scene]);
   useEffect(() => { scene?.showRoute(route?.vertices ?? []); }, [scene, route]);
   useEffect(() => { scene?.setSelected(world ? destination : null); }, [scene, world, destination]);
+  useEffect(() => { scene?.setVisited(visits); }, [scene, visits]);
+
+  // Los navegadores solo dejan arrancar el audio tras un gesto: se prepara en el primer toque o tecla,
+  // así las campanadas de escala y llegada (que no nacen de un clic) también suenan.
+  useEffect(() => {
+    const unlock = () => sound.unlock();
+    const events = ['pointerdown', 'keydown', 'touchend'] as const;
+    events.forEach(name => window.addEventListener(name, unlock, { once: true, passive: true }));
+    return () => events.forEach(name => window.removeEventListener(name, unlock));
+  }, [sound]);
 
   const name = (id: string) => world?.ubicaciones.find(i => i.id === id)?.nombre ?? id;
   const sailing = phase === 'sailing';
@@ -72,7 +82,7 @@ export default function App() {
             <div className="map-caption"><span>✦</span> {sailing ? 'Velas desplegadas. Seguimos el rumbo trazado.' : 'Seleccioná una isla para preparar tu travesía.'}</div>
             <div className="map-coordinates">34° S &nbsp; 58° O</div>
           </div>
-          <div className="map-bottom"><span><i className="legend-line" /> Rutas marítimas</span><span><i className="legend-line gold" /> Rumbo trazado</span><span><i className="legend-dot origin" /> Origen</span><span><i className="legend-dot stop" /> Escala</span><span><i className="legend-dot destination" /> Destino</span><span><i className="legend-cost">9</i> Costo del tramo (UC)</span><span className="map-scale">─── &nbsp; CARTA Nº 008</span></div>
+          <div className="map-bottom"><span><i className="legend-line" /> Rutas marítimas</span><span><i className="legend-line gold" /> Rumbo trazado</span><span><i className="legend-dot origin" /> Origen</span><span><i className="legend-dot stop" /> Escala</span><span><i className="legend-dot destination" /> Destino</span><span><i className="legend-flag" /> Isla visitada</span><span><i className="legend-cost">9</i> Costo del tramo (UC)</span><span className="map-scale">─── &nbsp; CARTA Nº 008</span></div>
         </section>
         <aside className="sidebar">
           <section className="ship-card"><div className="eyebrow">TU NAVÍO</div><div className="ship-title"><h2>La Aurora</h2><span className="ship-icon">⚓︎</span></div><div className="ship-subtitle">BALANDRA EXPLORADORA <span className={sailing ? 'status sailing' : 'status'}>{sailing ? 'EN TRAVESÍA' : 'ATRACADA'}</span></div>
@@ -82,7 +92,7 @@ export default function App() {
             <div className="fuel-bottom"><span>{fuel < 10 ? 'Reserva baja' : 'Listos para el horizonte'}</span><button disabled={sailing || fuel === TANK || !controller} onClick={() => controller?.refuel()}>+ Reabastecer</button></div>
           </section>
           <section className="navigation-card"><div className="eyebrow">CARTA DE RUMBO</div><h2>¿Hacia dónde, capitán?</h2>
-            <label htmlFor="destination">PRÓXIMO DESTINO</label><select id="destination" value={destination} disabled={!world || sailing} onChange={e => controller?.select(e.target.value)}>{world ? world.ubicaciones.map(i => <option key={i.id} value={i.id}>{i.nombre}{i.id === current ? ' · Estás aquí' : ''}</option>) : <option value="IP">Isla Perdida</option>}</select>
+            <label htmlFor="destination">PRÓXIMO DESTINO</label><select id="destination" value={destination} disabled={!world || sailing} onChange={e => controller?.select(e.target.value)}>{world ? world.ubicaciones.map(i => <option key={i.id} value={i.id}>{visits.includes(i.id) ? '⚑ ' : ''}{i.nombre}{i.id === current ? ' · Estás aquí' : ''}</option>) : <option value="IP">Isla Perdida</option>}</select>
             <p className="island-description">{descriptions[destination]}</p>
             {route && <div className="route-quote"><div className="route-stops">{route.vertices.map((id, i) => <span key={`${id}-${i}`}>{i > 0 && <b title="Costo del tramo" aria-label={`tramo de ${legCosts[i - 1]} UC`}>→<small>{legCosts[i - 1]}</small></b>}{name(id)}</span>)}</div><div className="route-cost"><span>{route.vertices.length - 1} tramos · menor consumo</span><strong>{route.costoTotal} UC</strong></div></div>}
             {route && route.costoTotal > fuel && !sailing && <p className="insufficient">Faltan {route.costoTotal - fuel} UC. Reabastecé antes de zarpar.</p>}
@@ -95,7 +105,7 @@ export default function App() {
             {sailing ? <button className="primary" disabled={stopRequested} onClick={() => controller?.requestStop()}>{stopRequested ? 'Atracaremos en la próxima isla' : '⚓︎ Detener en próxima escala'}</button> : route ? <button className="primary" disabled={route.costoTotal > fuel || !ready} onClick={() => controller?.depart()}>Zarpar hacia {destinationName} <span>→</span></button> : <button className="primary" disabled={!ready || loading || phase === 'planning' || current === destination} onClick={() => void controller?.plan()}>{phase === 'planning' ? 'Consultando al navegante…' : current === destination ? 'Ya estás en este destino' : 'Trazar rumbo'} <span>→</span></button>}
             <p className="navigation-note">El navegante busca la ruta de menor consumo. La partida se guarda en cada llegada.</p>
           </section>
-          <div className="progress-note"><span>◈</span><div><strong>{visits.length} de 8</strong><small>ISLAS VISITADAS</small></div><div className="progress-dots">{Array.from({ length: 8 }, (_, i) => <i className={i < visits.length ? 'visited' : ''} key={i} />)}</div></div>
+          <div className="progress-note"><span>◈</span><div><strong>{visits.length} de {world?.ubicaciones.length ?? 8}</strong><small>ISLAS VISITADAS</small></div><div className="progress-dots" aria-hidden="true">{(world?.ubicaciones ?? []).map(i => <i className={visits.includes(i.id) ? 'visited' : ''} title={`${i.nombre}${visits.includes(i.id) ? ' · visitada' : ''}`} key={i.id} />)}</div></div>
         </aside>
       </div>
       {error && <div className="error-banner" role="alert"><span>⚑ {error}</span><button disabled={loading || sailing} onClick={() => { if (world) void controller?.plan(); else void load(); }}>Reintentar</button>{world && <button disabled={sailing || loading} onClick={() => { controller?.clearRoute(); void load(); }}>Recargar mapa</button>}</div>}

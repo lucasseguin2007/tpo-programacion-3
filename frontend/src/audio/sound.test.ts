@@ -3,11 +3,13 @@ import { memoryStore } from '../state/save';
 import { MUTE_KEY, SoundEngine } from './sound';
 
 /** Contexto de audio falso: cualquier método o propiedad existe y devuelve otro falso. */
-function fakeContext() {
+function fakeContext(initial: 'running' | 'suspended' = 'running') {
   const calls: string[] = [];
+  let state = initial;
   const stub: any = new Proxy(function () {}, {
     get: (_t, prop) => {
-      if (prop === 'state') return 'running';
+      if (prop === 'state') return state;
+      if (prop === 'resume') return () => { calls.push('resume'); state = 'running'; return Promise.resolve(); };
       if (prop === 'currentTime') return 0;
       if (prop === 'sampleRate') return 8000;
       if (prop === 'getChannelData') return () => new Float32Array(16000);
@@ -86,5 +88,48 @@ describe('sonidos', () => {
     expect(engine.isMuted()).toBe(false);
     expect(() => engine.setMuted(true)).not.toThrow();
     expect(engine.isMuted()).toBe(true);
+  });
+
+  it('unlock prepara el audio con un gesto, sin sonar', () => {
+    const { ctx, calls } = fakeContext('suspended');
+    const factory = vi.fn(() => ctx);
+    const engine = new SoundEngine(memoryStore(), factory);
+    engine.unlock();
+    expect(factory).toHaveBeenCalledTimes(1);
+    expect(calls).toContain('resume');
+    expect(calls).not.toContain('createOscillator');
+  });
+
+  it('con el contexto suspendido espera a reanudarlo antes de tocar (las notas no se pierden)', async () => {
+    const { ctx, calls } = fakeContext('suspended');
+    const engine = new SoundEngine(memoryStore(), () => ctx);
+    engine.stopover();
+    expect(calls).not.toContain('createOscillator'); // todavía no: el reloj estaba detenido
+    await Promise.resolve(); await Promise.resolve();
+    expect(calls).toContain('createOscillator');
+  });
+
+  it('si se silencia mientras se reanuda, no suena', async () => {
+    const { ctx, calls } = fakeContext('suspended');
+    const engine = new SoundEngine(memoryStore(), () => ctx);
+    engine.dock();
+    engine.setMuted(true);
+    await Promise.resolve(); await Promise.resolve();
+    expect(calls).not.toContain('createOscillator');
+  });
+
+  it('al activar el sonido suena una campanita de confirmación; al silenciar, nada', () => {
+    const { ctx, calls } = fakeContext();
+    const engine = new SoundEngine(memoryStore({ [MUTE_KEY]: '1' }), () => ctx);
+    engine.setMuted(true);
+    expect(calls).not.toContain('createOscillator');
+    engine.setMuted(false);
+    expect(calls).toContain('createOscillator');
+  });
+
+  it('pasa por un limitador antes de los parlantes (volumen alto sin saturar)', () => {
+    const { ctx, calls } = fakeContext();
+    new SoundEngine(memoryStore(), () => ctx).unlock();
+    expect(calls).toContain('createDynamicsCompressor');
   });
 });

@@ -113,6 +113,20 @@ más adelante las misiones, reaccionen sin mezclarse con animaciones ni botones.
 **Cliente HTTP.** Un servidor caído, un puerto que no responde en 12 s o una
 respuesta ilegible muestran un mensaje claro en lugar de «Failed to fetch».
 
+## Etapa 1.2: correcciones tras probar el juego
+
+- **Sonido audible.** Medido en un navegador real, el pico que llegaba a los parlantes era ~0,02 (casi inaudible). Se subieron
+  los niveles y se agregó un limitador para no saturar. El audio se prepara en el primer toque o tecla del jugador, así las
+  campanadas de escala y llegada (que no nacen de un clic) también suenan, y un contexto suspendido se reanuda antes de tocar.
+  Al activar el sonido suena una campanita de confirmación.
+- **Islas visitadas.** Cada isla visitada lleva una bandera dorada clavada en la costa (cae con un rebote al llegar), una marca
+  `⚑` en el selector de destino, una entrada en la leyenda y un punto por isla en el panel del navío.
+- **Orientación del barco.** El giro de la proa usa reloj real (`game/world/steering.ts`, con pruebas) en vez del `delta`
+  suavizado del motor, y el barco espera a quedar alineado antes de avanzar (antes salía hasta ~97° desviado). El gallardete
+  flamea hacia popa y la sombra cae siempre hacia el mismo lado.
+- **Pantallas chicas.** Los carteles ORIGEN/ESCALA/DESTINO buscan el lugar que menos tape nombres y costos, y el cartel
+  "Seleccioná una isla…" se oculta en teléfonos porque tapaba nombres de islas.
+
 ## API agregada
 
 `GET /api/juego/mapa`
