@@ -35,6 +35,7 @@ export class ArchipelagoScene extends Phaser.Scene implements Sailor {
   private hull!: Phaser.GameObjects.Container;
   private shadow!: Phaser.GameObjects.Ellipse;
   private flags = new Map<string, Phaser.GameObjects.Container>();
+  private seals = new Map<string, Phaser.GameObjects.Graphics>();
   private visited = new Set<string>();
   private visitedSeen = false;
   private lastTick = 0;
@@ -144,8 +145,9 @@ export class ArchipelagoScene extends Phaser.Scene implements Sailor {
     const animate = this.visitedSeen;
     this.visitedSeen = true;
     for (const id of next) if (!this.visited.has(id)) this.plantFlag(id, animate);
-    for (const [id, flag] of this.flags) if (!next.has(id)) { flag.destroy(); this.flags.delete(id); }
+    for (const [id, flag] of this.flags) if (!next.has(id)) { flag.destroy(); this.flags.delete(id); this.seals.get(id)?.destroy(); this.seals.delete(id); }
     this.visited = next;
+    this.refreshStyles();
   }
 
   // ---- construcción ----------------------------------------------------------------------
@@ -195,17 +197,28 @@ export class ArchipelagoScene extends Phaser.Scene implements Sailor {
     g.fillStyle(0x2b1c0a).fillTriangle(2, -33, 21, -26, 2, -17); // borde
     g.fillStyle(0xf2c879).fillTriangle(3, -30.5, 16.5, -26, 3, -20.5); // gallardete dorado
     const flag = this.add.container(0, 0, [g]).setDepth(7);
+    // Sello dorado con tilde junto al nombre: se ve de un vistazo qué islas ya se recorrieron.
+    const seal = this.add.graphics().setDepth(7);
+    seal.fillStyle(0x2b1c0a).fillCircle(0, 0, 11).fillStyle(0xf2c879).fillCircle(0, 0, 9.5);
+    seal.lineStyle(2.6, 0x2b1c0a).beginPath().moveTo(-4.5, 0.5).lineTo(-1.2, 4).lineTo(5, -3.8).strokePath();
     this.flags.set(id, flag);
+    this.seals.set(id, seal);
     this.layoutFlag(view, flag);
     if (animate && !this.calm) {
       const y = flag.y;
       this.tweens.add({ targets: flag, y: { from: y - 22, to: y }, alpha: { from: 0, to: 1 }, duration: 560, ease: 'Bounce.easeOut' });
+      this.tweens.add({ targets: seal, alpha: { from: 0, to: 1 }, scale: { from: 0.2, to: seal.scale }, duration: 420, ease: 'Back.easeOut' });
     }
   }
 
   private layoutFlag(view: IslandView, flag: Phaser.GameObjects.Container) {
     const k = this.ui.islandScale;
-    flag.setScale(k * 1.3).setPosition(view.x + FLAG_SPOT[0] * k, view.y + FLAG_SPOT[1] * k);
+    flag.setScale(k * 1.8).setPosition(view.x + FLAG_SPOT[0] * k, view.y + FLAG_SPOT[1] * k);
+    const seal = this.seals.get(view.id);
+    if (seal) {
+      const box = view.label.getBounds(), f = this.ui.labelFont / 16;
+      seal.setScale(f).setPosition(Math.max(12 * f, box.left - 13 * f), view.label.y);
+    }
   }
 
   private addIsland(id: string, name: string, seed: number) {
@@ -331,7 +344,8 @@ export class ArchipelagoScene extends Phaser.Scene implements Sailor {
     for (const view of this.islands.values()) {
       const role = roles.get(view.id);
       const hot = view.id === this.hovered || view.id === this.selected;
-      view.label.setColor(hot ? '#ffe1a0' : '#e9e4c8').setBackgroundColor(view.id === this.selected ? '#4a3d16' : '#103e48');
+      const seen = this.visited.has(view.id);
+      view.label.setColor(hot ? '#ffe1a0' : seen ? '#f5e3a8' : '#e9e4c8').setBackgroundColor(view.id === this.selected ? '#4a3d16' : seen ? '#1d4b3c' : '#103e48');
       if (role) {
         const style = ROLE_STYLE[role.role];
         view.berth.setStrokeStyle(style.width, style.stroke, 0.95).setFillStyle(style.fill, style.fillAlpha);
