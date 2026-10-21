@@ -2,6 +2,12 @@
 
 Trabajo Práctico Obligatorio — UADE, segundo cuatrimestre de 2026.
 
+## Videojuego web (rama feature/pirate-game)
+
+La primera etapa jugable incorpora React, TypeScript y Phaser 3 en `frontend/`:
+mapa pixel art, navegación con Dijkstra Java, combustible, escalas y bitácora.
+Ver [cómo iniciar y jugar](docs/JUEGO.md). El backend y sus algoritmos se conservan.
+
 ## Integrantes
 
 | Integrante | GitHub |

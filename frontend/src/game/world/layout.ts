@@ -1,0 +1,4 @@
+export const WIDTH = 1100, HEIGHT = 760;
+export const positions: Record<string, [number, number]> = { PR: [170, 535], IT: [230, 300], BN: [460, 490], IC: [520, 210], PD: [760, 335], IK: [835, 140], FN: [650, 635], IP: [955, 520] };
+export function position(id: string): [number, number] { return positions[id] ?? [550, 380]; }
+export const descriptions: Record<string, string> = { PR: 'Tu refugio entre mareas. Acá empieza toda gran historia.', IT: 'Palmeras, aguas tranquilas y secretos de viejos corsarios.', BN: 'Las luces del muelle apenas atraviesan la bruma.', IC: 'Una silueta de piedra vigila a quienes se acercan.', PD: 'El último sol enciende los tejados del puerto mercante.', IK: 'Bajo estas aguas, las leyendas todavía respiran.', FN: 'Muros de piedra y banderas sobre el paso del sur.', IP: 'Más allá de las cartas conocidas, una nueva orilla.' };
