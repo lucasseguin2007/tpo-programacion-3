@@ -1,175 +1,175 @@
-# TPO Programación III — Scaffold 2026
+# 🏴‍☠️ Red de Islas Piratas — Programación III
 
-Punto de partida del Trabajo Práctico Obligatorio. **No contiene ningún algoritmo
-implementado**: eso es exactamente lo que hay que hacer.
-
-Lo que sí trae resuelto, para que no pierdan tiempo en infraestructura:
-
-- modelo de grafo **ponderado** en Neo4j, listo para Dijkstra, Prim y Kruskal
-- carga del grafo de la base a una estructura en memoria (`Grafo`)
-- todos los endpoints ya cableados, devolviendo `501 Not Implemented`
-- datos de ejemplo que se cargan solos al arrancar
-- manejo de errores, configuración por variables de entorno y tests de base
-
-## Arranque rápido
-
-```bash
-# 1. Levantar Neo4j (local o Aura) y exportar las credenciales
-cp .env.example .env          # completar NEO4J_PASSWORD
-export $(cat .env | xargs)
-
-# 2. Compilar y ejecutar
-./mvnw spring-boot:run
-
-# 3. Verificar que la base responde
-curl "http://localhost:8080/api/grafo/resumen"
-# -> {"vertices":8,"aristas":12,"dirigido":true,"ids":["A","B",...]}
-
-# 4. Probar un algoritmo sin implementar
-curl "http://localhost:8080/api/grafo/dfs?origen=A"
-# -> 501 {"estado":"PENDIENTE","detalle":"Todavia no esta implementado: DFS"}
-```
-
-Si el paso 3 responde, la infraestructura está bien y todo lo que queda es
-escribir algoritmos.
-
-## Estructura
-
-```
-model/          Nodo, Conexion (arista con costo), Item
-repository/     acceso a Neo4j — repositorios BLOQUEANTES, sin Mono/Flux
-service/        Grafo (lista de adyacencia en memoria) y GrafoService (carga)
-algorithm/      >>> ACÁ VA TODO EL TRABAJO <<<  ahora son stubs con TODO
-controller/     endpoints ya cableados — NO poner lógica algorítmica acá
-seed/           datos de ejemplo
-```
-
-## Endpoints
-
-| Método | Endpoint | Algoritmo | Puntos |
-|---|---|---|---|
-| GET | `/api/grafo/resumen` | — (verificación) | — |
-| GET | `/api/grafo/dfs?origen=A` | DFS | 2 (con BFS) |
-| GET | `/api/grafo/bfs?origen=A` | BFS | |
-| GET | `/api/grafo/dijkstra?origen=A&destino=H` | Dijkstra | 3 (con Prim y Kruskal) |
-| GET | `/api/grafo/prim?origen=A` | Prim | |
-| GET | `/api/grafo/kruskal` | Kruskal | |
-| GET | `/api/grafo/floyd` | Floyd-Warshall | 1 (con mochila 0/1) |
-| GET | `/api/grafo/ucs?origen=A&destino=H` | UCS | opcional |
-| GET | `/api/seleccion/greedy?capacidad=10` | Greedy | 1 |
-| GET | `/api/seleccion/dinamica?capacidad=10` | Mochila 0/1 con PD | 1 |
-| GET | `/api/seleccion/quicksort?criterio=ratio` | QuickSort | 1 (con MergeSort) |
-| GET | `/api/seleccion/mergesort?criterio=peso` | MergeSort | |
-| GET | `/api/grafo/rutas?origen=A&destino=H&costoMaximo=30` | Backtracking | 1 |
-| GET | `/api/seleccion/repartir?contenedores=3` | Branch & Bound | 1 |
-
-## El grafo de ejemplo
-
-```
-      4        3
-  A ------ B ----- C
-   \       |     / |  \
-    \ 9    | 7  /2 |11 \
-     \     |   /   |    \
-      ---- C   D --+     E
-                |  5    / \
-             8  |      /10 \ 6
-                F ----+     G
-                 \ 3        | 4
-                  H --------+
-```
-
-Aristas: A-B(4) A-C(9) B-C(3) B-D(7) C-D(2) C-E(11) D-E(5) D-F(8) E-F(6) E-G(10) F-H(3) G-H(4)
-
-Está elegido a propósito para que el camino mínimo **no sea el directo**:
-A→C cuesta 9 en línea recta, pero A→B→C cuesta 7. Si su Dijkstra devuelve 9,
-la relajación de aristas está mal.
-
-## Antes de entregar
-
-- [ ] `./mvnw test` pasa
-- [ ] no hay ninguna contraseña en el código ni en `application.properties`
-- [ ] cada algoritmo implementado tiene al menos un test
-- [ ] `docs/ENDPOINTS.md` documenta entrada y salida de cada endpoint
-- [ ] el README explica **qué dominio eligieron y qué representa el costo**
-
-Ver `GUIA-TPO.md` para el paso a paso.
-
-# Hito 3 - Dominio: Red de Islas Piratas
+Trabajo Práctico Obligatorio — UADE, segundo cuatrimestre de 2026.
 
 ## Integrantes
 
-- Santiago Testino
-- Santiago Villanti
-- Lucas Seguin
+| Integrante | GitHub |
+|---|---|
+| Lucas Seguin | [lucasseguin2007](https://github.com/lucasseguin2007) |
+| Santiago Testino | [santiagotestinof](https://github.com/santiagotestinof) |
+| Santiago Villanti | [villantisantiago](https://github.com/villantisantiago) |
 
-## Descripción
+## 1. Descripción del proyecto
 
-El sistema modela un mundo de piratas compuesto por diferentes islas,
-puertos y fortalezas marítimas conectadas mediante rutas navegables.
+Red de Islas Piratas es un sistema desarrollado en Java con Spring Boot y Neo4j que representa un archipiélago formado por islas, puertos y fortalezas conectados mediante rutas marítimas.
+El objetivo es aplicar diferentes técnicas de diseño y análisis de algoritmos para resolver problemas de navegación, optimización de rutas, exploración y distribución de cargamentos.
+Los algoritmos se implementan en Java y trabajan sobre un grafo cargado en memoria desde Neo4j.
 
-El objetivo es representar el mapa mediante un grafo ponderado para
-posteriormente aplicar algoritmos de recorrido, caminos mínimos,
-optimización y selección.
+## 2. Dominio y representación del grafo
+**Nodos:** representan ubicaciones marítimas, como islas, puertos y fortalezas.
+**Aristas:** representan rutas marítimas directas y bidireccionales entre ubicaciones.
+**Peso:** representa el combustible necesario para navegar entre dos ubicaciones.
+**Unidad:** UC (Unidades de Combustible).
 
-## Nodos
+El grafo principal es no dirigido, ponderado y conexo.
+### Ubicaciones
+| ID | Ubicación |
+|---|---|
+| PR | Puerto Real |
+| IT | Isla Tortuga |
+| BN | Bahía Negra |
+| IC | Isla Calavera |
+| PD | Puerto Dorado |
+| IK | Isla del Kraken |
+| FN | Fortaleza Naval |
+| IP | Isla Perdida |
 
-Cada nodo representa una ubicación importante del mapa.
-
-Las ubicaciones iniciales son:
-
-- Puerto Real
-- Isla Tortuga
-- Bahía Negra
-- Isla Calavera
-- Puerto Dorado
-- Isla del Kraken
-- Fortaleza Naval
-- Isla Perdida
-
-## Aristas
-
-Cada arista representa una ruta marítima directa entre dos ubicaciones.
-
-Las rutas son bidireccionales, por lo que pueden recorrerse en ambos sentidos.
-
-## Costo de las aristas
-
-El peso de cada arista representa la cantidad de combustible necesaria
-para recorrer esa ruta marítima.
-
-La unidad utilizada será UC (Unidades de Combustible).
-
-Ejemplo:
-
-Puerto Real -- Isla Tortuga = 4 UC
-
-Esto significa que viajar entre ambas ubicaciones consume 4 unidades
-de combustible.
-
-## Conexiones iniciales
-
+### Conexiones marítimas
 | Origen | Destino | Costo |
 |---|---|---|
-| Puerto Real | Isla Tortuga | 4 UC |
-| Puerto Real | Bahía Negra | 7 UC |
-| Puerto Real | Fortaleza Naval | 9 UC |
-| Isla Tortuga | Bahía Negra | 3 UC |
-| Isla Tortuga | Isla Calavera | 6 UC |
-| Isla Tortuga | Puerto Dorado | 8 UC |
-| Bahía Negra | Isla Calavera | 5 UC |
-| Bahía Negra | Fortaleza Naval | 6 UC |
-| Isla Calavera | Puerto Dorado | 4 UC |
-| Isla Calavera | Isla del Kraken | 7 UC |
-| Puerto Dorado | Isla del Kraken | 3 UC |
-| Puerto Dorado | Isla Perdida | 9 UC |
-| Isla del Kraken | Isla Perdida | 5 UC |
-| Fortaleza Naval | Isla Perdida | 8 UC |
+| PR | IT | 4 UC |
+| PR | BN | 7 UC |
+| PR | FN | 9 UC |
+| IT | BN | 3 UC |
+| IT | IC | 6 UC |
+| IT | PD | 8 UC |
+| BN | IC | 5 UC |
+| BN | FN | 6 UC |
+| IC | PD | 4 UC |
+| IC | IK | 7 UC |
+| PD | IK | 3 UC |
+| PD | IP | 9 UC |
+| IK | IP | 5 UC |
+| FN | IP | 8 UC |
+La red contiene 8 nodos y 14 conexiones bidireccionales.
 
-## Selección de cargamentos
+## 3. Algoritmos implementados
+| Técnica | Algoritmo | Aplicación |
+|---|---|---|
+| Divide y Conquista | QuickSort | Ordenamiento de cargamentos |
+| Divide y Conquista | MergeSort | Ordenamiento de cargamentos |
+| Recorridos | DFS | Exploración en profundidad |
+| Recorridos | BFS | Exploración por niveles |
+| Greedy | Dijkstra | Ruta marítima de menor costo |
+| Greedy | Prim | Árbol de recubrimiento mínimo |
+| Greedy | Kruskal | Árbol de recubrimiento mínimo |
+| Greedy | Selección por valor/peso | Selección de cargamentos |
+| Programación Dinámica | Mochila 0/1 | Selección óptima de cargamentos |
+| Programación Dinámica | Floyd-Warshall | Caminos mínimos entre todos los pares |
+| Backtracking | Rutas simples con poda | Exploración con restricciones |
+| Branch & Bound | Reparto de cargamentos | Minimización de carga máxima |
+Se incluye además un endpoint de comparación entre Floyd-Warshall y múltiples ejecuciones de Dijkstra.
 
-El barco tendrá una capacidad máxima de carga.
+## 4. Tecnologías utilizadas
+- Java 17
+- Spring Boot
+- Neo4j
+- Spring Data Neo4j
+- Maven
+- JUnit 5
+- Git y GitHub
 
-Los diferentes cargamentos tendrán un peso y un valor asociado,
-permitiendo posteriormente aplicar algoritmos como mochila fraccional
-y mochila 0/1.
+### Organización del proyecto
+- `model/`: entidades Nodo, Conexion e Item.
+- `repository/`: acceso a Neo4j.
+- `service/`: carga y representación del grafo en memoria.
+- `algorithm/`: implementación de los algoritmos.
+- `controller/`: endpoints REST.
+- `seed/`: carga inicial de ubicaciones, conexiones y cargamentos.
+- `src/test/`: pruebas unitarias.
+- `docs/`: documentación de endpoints y complejidades.
+
+## 5. Instalación y ejecución
+### Requisitos
+- Java 17
+- Neo4j funcionando
+- Acceso a Maven mediante Maven Wrapper
+### Configuración
+La aplicación utiliza variables de entorno para conectarse a Neo4j:
+- `NEO4J_URI`: dirección del servidor.
+- `NEO4J_USER`: usuario.
+- `NEO4J_PASSWORD`: contraseña.
+Se proporciona el archivo `.env.example` como referencia. Las credenciales reales no deben almacenarse en el repositorio.
+Una vez configurada la conexión, iniciar la aplicación:
+```bash
+./mvnw spring-boot:run
+```
+En Windows:
+```powershell
+.\mvnw.cmd spring-boot:run
+```
+La API estará disponible en `http://localhost:8080`.
+Para verificar el grafo:
+```http
+GET http://localhost:8080/api/grafo/resumen?dirigido=false
+```
+Si la base está vacía y la carga inicial está habilitada, se incorporan las 8 ubicaciones, las 14 rutas y los 5 cargamentos.
+## 6. Endpoints principales
+### Grafos
+| Método | Endpoint |
+|---|---|
+| GET | `/api/grafo/resumen?dirigido=false` |
+| GET | `/api/grafo/dfs?origen=PR` |
+| GET | `/api/grafo/bfs?origen=PR` |
+| GET | `/api/grafo/dijkstra?origen=PR&destino=IP` |
+| GET | `/api/grafo/prim?origen=PR` |
+| GET | `/api/grafo/kruskal` |
+| GET | `/api/grafo/floyd` |
+| GET | `/api/grafo/comparacion` |
+| GET | `/api/grafo/rutas?origen=PR&destino=IP&costoMaximo=20&saltosMaximos=3` |
+
+### Selección y optimización
+| Método | Endpoint |
+|---|---|
+| GET | `/api/seleccion/quicksort?criterio=ratio` |
+| GET | `/api/seleccion/mergesort?criterio=ratio` |
+| GET | `/api/seleccion/greedy?capacidad=10` |
+| GET | `/api/seleccion/dinamica?capacidad=10` |
+| GET | `/api/seleccion/repartir?contenedores=2` |
+La documentación detallada de entradas, salidas, complejidades y verificaciones se encuentra en [docs/ENDPOINTS.md](docs/ENDPOINTS.md).
+El endpoint opcional UCS está presente, pero permanece pendiente de implementación y no forma parte de los algoritmos declarados como completos.
+
+## 7. Verificaciones de los algoritmos
+**Dijkstra:** la ruta PR → FN → IP consume 17 UC.
+**Prim y Kruskal:** ambos obtienen un árbol de recubrimiento mínimo de costo 30 UC.
+**Greedy vs. Mochila 0/1:** con capacidad 10, Greedy obtiene valor 90 y Programación Dinámica obtiene 105, demostrando que la elección voraz no garantiza el óptimo para objetos indivisibles.
+**Floyd-Warshall:** obtiene los costos mínimos entre los 64 pares de ubicaciones.
+**Backtracking:** permite buscar rutas simples bajo límites de costo y saltos y comparar las exploraciones con y sin poda.
+**Branch & Bound:** para los cinco cargamentos distribuidos entre dos barcos, obtiene una carga máxima óptima de 13 unidades. En la ejecución de referencia se exploraron 49 estados y se podaron 21.
+
+## 8. Tests
+El proyecto incluye pruebas unitarias de los algoritmos utilizando JUnit 5.
+Para ejecutar los tests:
+```powershell
+.\mvnw.cmd test
+```
+La entrega final requiere que todas las pruebas terminen sin errores.
+
+## 9. Documentación
+- [Documentación de endpoints](docs/ENDPOINTS.md)
+- [Informe de complejidades](docs/COMPLEJIDADES.md)
+
+## 10. Uso de inteligencia artificial
+Durante el desarrollo del TPO se utilizó **ChatGPT de OpenAI** como herramienta de asistencia para:
+- Comprender algoritmos y técnicas de diseño.
+- Analizar complejidades temporales y espaciales.
+- Revisar implementaciones Java.
+- Proponer y revisar pruebas unitarias.
+- Diagnosticar errores.
+- Preparar y organizar la documentación técnica.
+Las soluciones fueron integradas en el proyecto y verificadas mediante pruebas y ejecuciones de la aplicación.
+El uso de herramientas de inteligencia artificial se declara de acuerdo con los requisitos de la materia Programación III.
+
+## 11. Entrega final
+La entrega se realiza mediante el repositorio de GitHub y el tag `entrega-final`, que identifica la versión presentada para su evaluación.
