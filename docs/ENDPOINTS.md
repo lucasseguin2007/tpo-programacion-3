@@ -63,7 +63,7 @@
 
 **Estructuras utilizadas:** PriorityQueue, arreglos de distancias, predecesores y visitados.
 
-**Complejidad temporal:** O((V + E) log V).
+**Complejidad temporal:** O((V + E) log (V+E)).
 
 **Complejidad espacial:** O(V + E), considerando la cola de prioridad con entradas duplicadas.
 
