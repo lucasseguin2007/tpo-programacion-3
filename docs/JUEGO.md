@@ -51,12 +51,67 @@ ignorados en `target/`, `frontend/dist/` y `frontend/node_modules/`.
 - **Reabastecer** completa 30 UC de forma gratuita en cualquier ubicación. Es una
   facilidad de esta primera etapa, no una economía definitiva.
 - **Nueva partida** pide confirmación y vuelve a Puerto Real, incluso si hay una
-  travesía en curso. Cancela animaciones y descarta respuestas pendientes.
+  travesía en curso. Cancela animaciones, descarta respuestas pendientes y borra
+  la partida guardada.
 - La bitácora registra salidas, llegadas y reabastecimientos.
 
-La partida es local y se reinicia al recargar la página. No hay guardado, combate,
+La partida se guarda en el navegador (ver «Etapa 1.1»). No hay combate,
 cargamentos, niebla de exploración ni control libre con WASD en esta etapa.
 Las ocho ubicaciones están visibles desde el inicio; el contador indica visitas.
+
+## Etapa 1.1: pulido
+
+Antes de sumar misiones se mejoró cómo se siente navegar y se aisló la base.
+La economía (reabastecimiento según el puerto y recompensas), el combate, el
+multijugador y el movimiento libre quedan para etapas posteriores.
+
+**El barco.** Sprite nuevo (balandra con casco, cubierta, velas y gallardete),
+estela de espuma que se abre y se desvanece, ola de proa y cabeceo suave. La proa
+gira gradualmente al cambiar de rumbo antes de avanzar. Al llegar, el barco amarra
+paralelo al muelle de la isla, con ondas expansivas y un pulso en el amarre. Cada
+isla tiene ahora un muelle propio y las rutas unen muelles, de modo que el barco
+navega exactamente por las líneas dibujadas.
+
+**Lectura del mapa.** La isla elegida como destino se resalta con un halo. Cada
+tramo muestra su costo en UC. Con una ruta trazada, el origen, las escalas y el destino
+se marcan distinto (color y etiqueta) y los costos de la ruta quedan resaltados. El
+selector accesible y el mapa siguen siendo equivalentes.
+
+**Pantallas chicas.** El lienzo se escala para caber, así que los textos del mapa se
+agrandan según el tamaño real en pantalla. En pantallas chicas los nombres se abrevian
+(«Kraken» en lugar de «Isla del Kraken»), las islas crecen un poco, las zonas táctiles
+miden ~48 px reales y solo se muestran los costos de la ruta trazada. La ubicación de
+los costos se calcula para no tapar islas, nombres ni otros costos
+(`placeBadges` en `game/world/layout.ts`, con pruebas).
+
+**Travesía.** Mientras se navega, la carta de rumbo muestra el próximo puerto, el
+tramo actual («Tramo 1 de 2 · 9 UC»), una barra de progreso del tramo y, si hay
+escalas, el avance de toda la travesía. El control sigue siendo por destinos.
+
+**Sonido.** Mar de fondo mientras se navega, campana al zarpar, campanada en cada
+escala y dos al llegar. Se sintetizan con Web Audio (sin archivos de audio) y se
+pueden silenciar con el botón «Sonido» de la carta; la elección se recuerda. Si el
+navegador no ofrece audio, el juego sigue en silencio. Con «reducir movimiento» activo
+en el sistema se omiten las animaciones continuas (cabeceo y pulso de selección).
+
+**Guardado.** En cada llegada se guarda en `localStorage` la ubicación, el
+combustible, las islas visitadas y la bitácora; también al reabastecer. Recargar
+durante un viaje recupera la última escala con el combustible que tenía al llegar
+(el tramo en curso no se cobra). Un guardado ilegible, de otra versión o que no
+corresponde al mapa actual se descarta y se empieza de cero. Si el navegador no
+permite guardar, se juega igual. La clave es `cartas-del-archipielago:partida:v1`.
+
+**Lógica separada de la interfaz.** `state/navigation.ts` concentra travesías,
+combustible, respuestas pendientes y guardado. Una consulta de ruta tardía, o de un
+destino ya cambiado, o posterior a un reinicio, se descarta (y se cancela la
+petición HTTP). Un itinerario que no parte de la ubicación actual, que no llega al
+destino pedido o cuyos costos no coinciden con el mapa nunca puede zarpar. Perder
+la escena en plena travesía la cancela y devuelve el barco a la última escala. El
+controlador emite eventos (`depart`, `stopover`, `dock`, `halt`) para que el sonido, y
+más adelante las misiones, reaccionen sin mezclarse con animaciones ni botones.
+
+**Cliente HTTP.** Un servidor caído, un puerto que no responde en 12 s o una
+respuesta ilegible muestran un mensaje claro en lugar de «Failed to fetch».
 
 ## API agregada
 
@@ -93,11 +148,17 @@ reintentar. Una respuesta atrasada no reemplaza un destino nuevo ni una partida 
 - `frontend/src/api`: contratos REST y tratamiento de errores.
 - `frontend/src/game`: escena Phaser, arte pixel procedural y ciclo de vida del canvas.
 - `frontend/src/game/world`: composición visual por ID; no guarda costos del grafo.
-- `frontend/src/state`: reglas de consumo y validación de itinerarios.
-- `frontend/src/App.tsx`: sesión y coordinación entre React y Phaser.
+- `frontend/src/state`: reglas de juego, sin React ni Phaser.
+  `navigation.ts` (controlador de travesías), `save.ts` (guardado local),
+  `voyage.ts` (consumo y validación de itinerarios) y `useNavigation.ts`
+  (puente fino hacia React).
+- `frontend/src/audio`: sonidos sintetizados con Web Audio.
+- `frontend/src/App.tsx`: dibuja el estado y reenvía los clics; no contiene reglas.
 
-React es dueño del estado de sesión. Phaser dibuja y anima; informa la llegada
-para que React avance al siguiente tramo. No se actualiza React por cuadro.
+El controlador de navegación es dueño del estado de sesión. Phaser dibuja y anima;
+informa progreso y llegada mediante la interfaz `Sailor` para que el controlador
+avance al siguiente tramo. React solo se actualiza cuando el estado cambia
+(el progreso del tramo se publica en pasos del 1 %, no por cuadro).
 Los sprites y las islas se dibujan con código propio; no requieren imágenes de terceros.
 Las fuentes de Google Fonts tienen alternativas locales si no hay conexión.
 
@@ -110,11 +171,26 @@ npm test
 npm run build
 ```
 
-Las pruebas nuevas verifican el contrato HTTP del mapa, la respuesta Dijkstra,
+`npm test` cubre además (Vitest, sin navegador): el recorrido completo con el
+controlador (salida, escalas, llegada, parada, reabastecimiento y reinicio),
+combustible insuficiente, desconexiones y tiempos de espera, respuestas tardías o
+cruzadas (cambio de destino, trazados repetidos, reinicio, cierre), itinerarios
+inválidos, recuperación de partida (con el barco atracado, a mitad de viaje, guardado
+corrupto o de otro mapa, almacenamiento bloqueado o lleno), el sonido (silencio
+persistente, audio no disponible) y la geometría del mapa (muelles, escalado,
+ubicación de los costos). La escena de Phaser no tiene pruebas automáticas
+permanentes: requeriría un entorno de navegador simulado.
+
+Las pruebas Java nuevas verifican el contrato HTTP del mapa, la respuesta Dijkstra,
 errores de IDs, costos coincidentes para los 64 pares de ubicaciones, deduplicación,
 costos inválidos, combustible insuficiente y rutas inconsistentes.
 Las pruebas Java usan la carga inicial original con repositorios de prueba en memoria;
 no modifican Neo4j y no duplican los algoritmos.
+
+Prueba manual de la etapa 1.1: recargar la página con el barco atracado conserva
+ubicación, combustible e islas; recargar a mitad de un viaje vuelve a la última
+escala; «Sonido: no» persiste al recargar; en una ventana angosta (~360 px) los
+nombres se abrevian y se leen.
 
 Prueba manual: PR → FN → IP cuesta 17 UC y deja 13 UC. El regreso de 17 UC debe
 quedar bloqueado hasta reabastecer. Una parada IP → FN consume solo 8 UC antes
