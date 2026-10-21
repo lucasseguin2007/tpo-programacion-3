@@ -350,8 +350,38 @@ Reducción de exploraciones
 ---
 
 ### GET /api/seleccion/repartir
+**Endpoint:** GET /api/seleccion/repartir?contenedores=2
 
-_(completar — incluir cuál es la cota y por qué es optimista)_
+**Descripción:** Distribuye los cargamentos de la Red de Islas Piratas entre una cantidad determinada de barcos, minimizando la carga máxima.
+
+**Técnica:** Branch & Bound (Ramificación y Poda).
+
+**Función objetivo:** Minimizar el peso del barco más cargado.
+
+**Cota inferior:** max(cargaMaximaActual, pesoTotal / cantidadContenedores).
+
+**Justificación de la cota:** Es optimista porque ningún reparto puede tener una carga máxima menor que el promedio del peso total, ni menor que la carga máxima ya asignada a un barco.
+
+**Criterio de poda:** Si la cota inferior es mayor o igual que la mejor solución encontrada, se descarta la rama porque no puede mejorar el resultado.
+
+**Complejidad temporal:** O(k^n) en el peor caso, donde k es la cantidad de barcos y n la cantidad de cargamentos, sin contar el costo de copiar y evaluar cada distribución.
+
+**Complejidad espacial auxiliar:** O(k+n), sin contar el almacenamiento de la mejor distribución.
+
+**Estructuras utilizadas:** ArrayList, LinkedHashMap, double[] y pila recursiva.
+
+**Verificación:**
+
+- Barco 1: I1 (5) + I2 (4) + I4 (3) = 12.
+- Barco 2: I3 (6) + I5 (7) = 13.
+- Peso total: 25.
+- Carga máxima óptima: 13.
+- Nodos explorados: 49.
+- Nodos podados: 21.
+
+**Resultado:** La distribución encontrada minimiza la carga máxima y la poda permite evitar explorar alternativas que no pueden superar la mejor solución conocida.
+
+---
 
 ### GET /api/seleccion/quicksort
 Ordena los items utilizando QuickSort propio.

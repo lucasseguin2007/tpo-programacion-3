@@ -191,7 +191,49 @@ La implementación ejecuta el recorrido dos veces, una con poda y otra sin poda,
 
 ---
 
-## 6. Tabla resumen de complejidades
+
+
+## 6. Ramificación y Poda (Branch & Bound)
+
+### Reparto óptimo de cargamentos
+
+**Objetivo:** Distribuir n cargamentos entre k barcos minimizando la carga máxima.
+
+**Recurrencia:**
+
+T(n) = k * T(n-1) + O(k)
+
+Cada cargamento puede asignarse a cualquiera de los k barcos.
+
+**Complejidad temporal:** O(k^n * (k+n)) en el peor caso.
+
+**Complejidad espacial:** O(k+n).
+
+**Estructuras utilizadas:** ArrayList, LinkedHashMap, double[] y pila de recursión.
+
+**Justificación:** En cada nivel del árbol de búsqueda se prueba asignar un cargamento a cada uno de los k barcos. Sin poda, existen k^n asignaciones posibles.
+
+La implementación calcula una cota inferior:
+
+C = max(cargaMaximaActual, pesoTotal/k)
+
+Esta cota es optimista porque ninguna distribución puede alcanzar una carga máxima inferior al promedio de los pesos ni a la carga máxima ya asignada.
+
+Si la cota es mayor o igual que la mejor solución encontrada, se poda la rama.
+
+**Verificación sobre el proyecto:**
+
+- Cantidad de cargamentos: 5.
+- Cantidad de barcos: 2.
+- Peso total: 25.
+- Carga máxima óptima: 13.
+- Nodos explorados: 49.
+- Nodos podados: 21.
+
+**Resultado:** El algoritmo encuentra una distribución óptima y evita explorar ramas que no pueden mejorar la solución.
+
+
+## 7. Tabla resumen de complejidades
 | Algoritmo | Recurrencia | Tiempo | Espacio | Estructura de datos |
 |---|---|---|---|---|
 | QuickSort | T(n)=T(k)+T(n-k-1)+O(n) | O(n log n) promedio; O(n²) peor | O(n) | ArrayList, pila recursiva |
@@ -205,6 +247,7 @@ La implementación ejecuta el recorrido dos veces, una con poda y otra sin poda,
 | Mochila 0/1 | Relación dp[i][w] | O(n·W) | O(n·W) | double[][] |
 | Floyd-Warshall | Relación D(k,i,j) | O(V³) | O(V²) | double[][], LinkedHashMap |
 | Backtracking | Recursión sobre vecinos | O(V!) | O(V) auxiliar | boolean[], ArrayList |
+| Branch & Bound | T(n)=kT(n-1)+O(k) | O(k^n·(k+n)) | O(k+n) | ArrayList, double[], recursión |
 ### Consideraciones
 - Las complejidades corresponden a las implementaciones utilizadas en el proyecto.
 - Se considera acceso promedio O(1) para las operaciones de HashMap y HashSet.
